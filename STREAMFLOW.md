@@ -1,26 +1,26 @@
 # Livepeer Streamflow Paper
 
-**Livepeer Scalability on Ethereum through Orchestration, Probabilistic Micropayments, and Offchain Job Negotiation**
+**Escalabilidade da Livepeer através de Orquestragem, Micropagamentos Probabilísticos, e Negociação de Jobs Offchain**
 
-**Authors**    
+**Autores**    
 Doug Petkanics <doug@livepeer.org>    
 Yondon Fu <yondon@livepeer.org>
 
-**Researchers**    
+**Pesquisadores**    
 Eric Tang <eric@livepeer.org>    
 Philipp Angele <philipp@livepeer.org>    
 Josh Allmann <josh@livepeer.org>
 
-**STATUS: PROPOSAL - Feedback and review is requested on this early proposal.**
+**STATUS: PROPOSTA - Feedback e _peer review_ são bem-vindos.**
 
 ## Abstract #####################################
 
-The Streamflow proposal introduces updates to the Livepeer protocol and offchain implementations which will allow Livepeer to scale beyond the current limitations of the alpha protocol deployed to the Ethereum blockchain. It suggests updates that address affordability, reliability, performance, and scalability of the network. Key elements are introduced including a service registry, an offchain job negotiation and payments mechanism, a split between orchestration nodes and transcoding nodes, the elimination of the data availability problem solution as a dependency on trustless verification, and the opening up of the number of nodes that can compete to perform work on the network from the low arbitrary limits during the alpha. The resulting architecture will allow users of the network to perform high scale transcoding jobs on the network across many concurrent work providers, while significantly reducing the impact of the underlying blockchain's demand and price volatility on the economic viability of using the network. 
+A proposta Streamflow introduz mudanças ao protocolo Livepeer, assim como implementações offchain que permitirão à rede escalar além das limitações atuais da versão _alpha_, funcional na blockchain da Ethereum. A proposta sugere updates que endereçam a acessibilidade, confiabilidade, performance e escala da rede. Elementos-chave dela são: um registro de serviços, um mecanismo de negociação de jobs offchain e micropagamentos, uma divisão entre nós Orquestradores e nós Transcodificadores, a eliminação do problema da disponibilidade de dados na verificação independente de confiança, e o aumento no número de nós que podem competir para performar serviço à rede, valor que era arbitrariamente limitado durante o _alpha_. A arquitetura resultante permitirá a usuários ter acesso a serviços de transcodificação em escala, através de provedores concorrentes, enquanto tornará a viabilidade econômica da rede mais resistente a variações de preço e demanda na blockchain subjacente (Ethereum).
 
-## Table of Contents ###########################################
+## Índice ###########################################
 
-* [Introduction and Background](#introduction-and-background)
-* [Streamflow Protocol Proposal](#streamflow-protocol-proposal)
+* [Introdução e Background](#introdução-e-background)
+* [Streamflow Protocol Proposal](#proposta-do-protocolo-streamflow)
     * [Orchestrators and Transcoders](#orchestrators-and-transcoders)
     * [Relaxation of Transcoder Limit and Stake Enforced Security](#relaxation-of-transcoder-limit-and-stake-enforced-security)
     * [Service Registry](#service-registry)
@@ -45,27 +45,30 @@ The Streamflow proposal introduces updates to the Livepeer protocol and offchain
     * [Appendix A: Probabilistic Micropayments Workflow](#appendix-a-probabilistic-micropayments-workflow)
 * [References](#references)
 
-## Introduction and Background ###########################################
+## Introdução e Background ###########################################
 
-The Livepeer protocol incentivizes and secures a decentralized network of video transcoding nodes. Users who would like to transcode video can submit a job to the network at a price they determine to be acceptable, be assigned a transcoder, have the video transcoding performed with economically secured guarantees of accuracy. The live protocol uses a delegated-stake based mechanism for electing the nodes who are deemed reliable and high quality enough to perform live video encoding in a timely and performant manner. 
+O protocolo Livepeer incentiva e assegura uma rede decentralizada de nós transcodificadores de vídeos. Usuários que desejam transcodificar um vídeo podem submeter um job à rede, ao preço que determinarem; ter um transcodificador designado para si; e ter o vídeo transcodificado com garantias econômicas de acurácia. O protocolo usa um mecanismo baseado na delegação de _stakes_ para eleger os nós mais adequados para encodificar e decodificar transmissões ao vivo de modo rápido e performante.
 
-The alpha version of the protocol currently deployed on the Ethereum blockchain has implemented many of the designs originally specified in the [Livepeer Whitepaper](https://github.com/livepeer/wiki/blob/master/WHITEPAPER.md). The delegated stake based system, with its inflationary incentives, has shown to be effective in incentivizing participation, and creating an engaged early network of transcoders and delegators to perform transcoding work and QA accordingly. The network is usable, and for a number of use cases such as long running live transcoding, or decentralized app prototyping, is a viable option today in its early state. However, for the scaled usage of video infrastructure services, the alpha version suffers from the following weaknesses:
-
-1. Cost of using the network is too correlated to fluctuations in Ethereum gas pricing, and therefore at times of high gas prices, or encoding scenarios which require many transactions, the network becomes too expensive to be viable relative to centralized alternatives.
-1. Stake based job assignment and on-chain transcoder negotiation creates unreliable scenarios for the broadcaster - if their assigned transcoder goes offline, they incur additional costs and delays in negotiating for a second transcoder, which can be prohibitively disruptive in a live streaming context.
-1. The data availability problem remains unsolved (in production), and therefore verification of work can not be fully trustless and non-interactive. 
-1. Transcoders have no way of managing their availability to perform or not perform jobs depending upon capacity and workload beyond stake.
-1. While the network encourages price competition, it does not encourage performance competition and accountability directly.
-1. Current limitations of Ethereum gas limits and the protocol’s practical implementation restrict the number of active transcoders who can be active at any one time to a very low number, creating a high barrier to entry to compete for work on the network.
-
-The rest of this paper proposes solutions that address each of these weaknesses in turn. It leads off with a description of the architectural and protocol change proposals. It then analyzes the economic impacts of these changes on the network, before addressing the possible attacks. It moves on to acknowledge the open research areas which can contribute to taking this proposal from economic and social/reputation based security to strongly, cryptographically assured security. And it will finally conclude with some thoughts on a migration path from the alpha protocol to Streamflow in the live network, should the community wish to accept these changes.
-
-This paper describes the conceptual protocol changes and analyzes their impact, but leaves the specific specifications for their implementation to an accompanying SPEC document to be provided as part of the Livepeer Improvement Proposal (LIP) process.
-
-_Note: To properly absorb the protocol updates, it's important to have an understanding of how the current Livepeer protocol works, as described in the Whitepaper [[1](#references)]._
+A versão _alpha_, funcional na blockchain da Ethereum desde maio de 2018, implementou muitos dos designs originalmente especificados no [Whitepaper da Livepeer](https://github.com/livepeer/wiki/blob/master/WHITEPAPER.md). O sistema de delegação de _stakes_, com seus incentivos inflacionários, se provou eficiente em motivar a participação, e em criar uma rede emergente de transcodificadores e delegadores para garantir a qualidade do trabalho sendo performado. A rede é usável, e para certos casos de uso, como transmissões ao vivo de longa duração, ou prototipagem de apps descentralizados, provou-se uma opção viável, ainda que em estágio incipiente. No entanto, a versão _alpha_ não comporta demanda em escala por infraestrutura para processamento de vídeos, devido às seguintes fraquezas:
 
 
-## Streamflow Protocol Proposal #################################
+1. O custo de se usar a rede é correlacionado demais com flutuações nos preços de gas da Ethereun, fazendo com que, em momentos de preços altos, ou cenários que requerem muitas transações, a rede se torna cara demais para ser uma alternativa viável.
+2. A delegação de jobs baseada em _stakes_ e as negociações onchain criam cenários imprevisíveis para o _broadcaster_ - se o transcodificador que lhe foi designado fics offline, incorrerão custos extras e atrasos durante a negociação por um novo transcodificador, o que pode ser proibitivo em um contexto de transmissão ao vivo.
+3. O problema da disponibilidade de dados permanece não resolvido (em produção), e a verificação de trabalhos performados ainda não pode ser completamente independente de confiança e não-interativa.
+4. Transcodificadores não tem como gerir sua disponibilidade em função de sua capacidade e trabalhos em curso, somente atravé de _stake_.
+5. Enquanto a rede encoraja a competição por preços, ela não motiva competição a nível de performance e confiabilidade diretamente.
+6. Limitações atuais da Ethereum (limites de gas) e aspectos práticos da implementação do protocolo restringem o número de transcodificadores que podem estar ativos a qualquer momento, criando uma barreira de entrada para quem quer competir por trabalho na rede.
+
+O resto desse paper propõe soluções que endereçam cada uma dessas fraquezas. Começa com uma descrição das mudanças arquiteturais propostas ao protocolo. Então analisa os impactos econômicos dessas mudanças, antes de endereças possíveis vetores de ataque. Enfim, debruça-se sobre áreas de pesquisa aberta cujo desenvolvimento pode contribuir para elevar essa proposta de um modelo de segurança social/reputacional para um que resida em garantias puramente criptográficas. Finalmente, conclui com ideias para um caminho de migração que leve o protocolo _alpha_ à versão Streamflow, em ambiente de produção, caso a comunidade aceite e abrace tais mudanças.
+
+Esse paper descreve alterações conceituai e analisa seus impactos, mas deixa implementações específicas para um documento de SPECs a ser provido como parte do processo de LIPs (Livepeer Improvement Proposals).
+
+_Nota: Para absorver propriamente os updates propostos, é importante ter um entendimento de como o protocolo atual da Livepeer funciona, como descrito no whitepaper [[1](#references)]._
+
+
+## Proposta do Protocolo Streamflow #################################
+
+ESTOU AQUI!
 
 This proposal introduces a number of changes and new concepts into the Livepeer ecosystem. Each delivers impacts across one or many of the areas of affordability, performance, reliability, or scalability. They include:
 
