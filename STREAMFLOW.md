@@ -20,9 +20,9 @@ A proposta Streamflow introduz mudanças ao protocolo Livepeer, assim como imple
 ## Índice ###########################################
 
 * [Introdução e Background](#introdução-e-background)
-* [Streamflow Protocol Proposal](#proposta-do-protocolo-streamflow)
-    * [Orchestrators and Transcoders](#orchestrators-and-transcoders)
-    * [Relaxation of Transcoder Limit and Stake Enforced Security](#relaxation-of-transcoder-limit-and-stake-enforced-security)
+* [Proposta do Protocolo Streamflow](#proposta-do-protocolo-streamflow)
+    * [Orquestradores e Transcodificadores](#orquestradores-e-transcodificadores)
+    * [Relaxamento no Limite de Transcodificadores e Segurança Garantida por _Stakes_](#relaxamento-no-limite-de-transcodificadores-e-segurança-garantida-por-stakes)
     * [Service Registry](#service-registry)
     * [Offchain Job Negotiation](#offchain-job-negotiation)
     * [Probabilistic Micropayments](#probabilistic-micropayments)
@@ -68,43 +68,45 @@ _Nota: Para absorver propriamente os updates propostos, é importante ter um ent
 
 ## Proposta do Protocolo Streamflow #################################
 
-ESTOU AQUI!
+Os updates e novos conceitos dessa proposta impactam uma ou mais das seguintes áreas: acessibilidade, performance, confiabilidade e escalabilidade. Eles incluem:
 
-This proposal introduces a number of changes and new concepts into the Livepeer ecosystem. Each delivers impacts across one or many of the areas of affordability, performance, reliability, or scalability. They include:
+* A introdução do novo papel de Orquestrador, somando-se aos papeis já existentes dos _Broadcasters_ e Transcodificadores.
+* O relaxamento no limite do número de transcodificadores, permitingo o acesso aberto à competição por trabalho entre quaisquer aspirantes a Orquestradores que possuam tokens e superem os requisitos mínimos de _stake_ e segurança.
+* Um registro de serviços no qual Orquestradores propagandeiam sua disponibilidade e serviços, onchain.
+* Um mecanismo offchain de negociação de preços e designação de jobs entre _Broadcasters_ e Orquestradores.
+* Micropagamentos probabilísticos offchain, com liquidação e depósitos de segurança onchain.
+* Update no esquema de verificação, em que a verificação onchain só precisa ocorrer no caso da observação de uma falta.
 
-* Introduction of a new role of Orchestrator, to the existing roles of Broadcasters and Transcoders. 
-* Relaxation on the limitation on number of transcoders, allowing open access to compete for work amongst any aspiring token holding Orchestrator meeting the minimum stake and security requirements.
-* Service registry in which Orchestrators advertise their available capabilities and services on chain.
-* Offchain price negotiation and job assignment between Broadcasters and Orchestrators.
-* Offchain payments using Probabilistic Micropayments, with on chain settlement and security deposits.
-* Updated verification flow, in which on chain verification only needs to occur in the case of an observed fault.
+### Orquestradores e Transcodificadores
 
-### Orchestrators and Transcoders
+Na versão _alpha_, um Transcodificador na rede Livepeer é um nó ciente do protocolo que tanto assiste quanto interage com a blockchain, enquanto performa serviços de processamento de vídeo. Em suma, ele tanto contribui para orquestrar o trabalho na rede, quanto transcodifica vídeo de fato. A ausência de distinção entre as funções pode causar problemas de performance e confiabilidade, dificultando a nós escalarem suas operações. Streamflow propõe uma "arquitetura em dois níveis", separando entre:
 
-Currently a Transcoder on the Livepeer network is a protocol-aware node that both watches and interacts with the blockchain protocol and performs video transcoding work. In short, it both orchestrates work on the network, and transcodes video. This can create performance and reliability issues, and make it difficult for nodes to scale their operations. Streamflow proposes a two tiered architecture, which contains a split between:
-
-* An Orchestrator which is protocol aware, negotiates work with Broadcasters, is responsible for delivering verified transcoded segments to the Broadcasters, and coordinates the execution of this work amongst a potentially large pool of transcoders.
-* A Transcoder which is not necessarily aware of the Livepeer staking protocol or blockchain, and instead is just competitive, cost-effective hardware, which does the sole job of racing to transcode video as cheaply and quickly as possible, as coordinated by Orchestrators.
+* Orquestradores, que são cientes do protocolo, negociam com _Broadcasters_, são responsáveis pela entrega de segmentos verificadamente transcodificados de volta a eles, e coordenam a execução de trabalho entre um grupo potencialmente grande de Transcodificadores.
+* Transcodificadores, que não necessariamente são cientes do protocolo, do mecanismo de _staking_, ou da blockchain, mas, por outro lado, têm hardware competitivo em custo-benefício, que se dedica somente ao trabalho de transcodificar vídeos da maneira mais rápida e barata possível, conforme coordenado por Orquestradores.
 
 <img src="https://livepeer-dev.s3.amazonaws.com/docs/otsplit.jpg" alt="Orchestrator Transcoder Split" style="width:750px">
 
-Tier one of this architecture is similar to the current Livepeer protocol, wherein current Transcoders are renamed to Orchestrators. These Orchestrators stake LPT to provide security deposits against the work that they perform, such that should they harm the network, they incur economic penalty. Broadcasters are aware of these Orchestrators, negotiate jobs with them, and receive transcoded segments back from them, with the ability to slash the Orchestrators if they perform work dishonestly. 
+**O primeiro nível** dessa arquitetura é similar ao protocolo _alpha_ da Livepeer, mas Transcodificadores são renomeados como Orquestradores. Orquestradores aplicam (_stake_) seus tokens LPT como depósitos de segurança contra o trabalho que performam, ao passo que, caso façam mal à rede, incorrem penalidade econômica. _Broadcasters_ são cientes dos Orquestradores, negociam jobs com eles, e recebem segmentos transcodificados de volta, com a habilidade de induzir penalidades aos Orquestradores caso estes ajam desonestamente.
 
-Tier two of this architecture is a new concept called the Transcoder Pool. The job of actually racing to perform video transcoding as quickly and cheaply as possible can be performed by GPUs who have available capacity, such as those described in the Video Miner Proposal[[2](#references)], which have NVENC asics sitting idle. This hardware should just be able to compete to perform the actual encoding work, and the competitive forces and economics should result in significantly cheaper prices than if Orchestrators themselves needed to perform the work on the same CPU based setups required to run blockchain and protocol aware orchestration on the network.
+**O segundo nível** dessa arquitetura engloba um conceito novo, nomeado Pool de Transcodificadores. O job de se correr para processar vídeos o mais barato e rápido possível pode ser performado por quaisquer GPUs com capacidade disponível, como aquelas descritas na Proposta do Mineração de Vídeo (The Video Miner Proposal[[2](#references)]), ou seja, placas que carregam ASICs NVENC ociosos. Este hardware é capaz de competir pelo trabalho de encodificação e decodificação, e forças de mercado devem contribuir para que os preços sejam significantemente menores do que seriam se Orquestradores, por conta própria, tivessem de performá-lo paralelamente ao trabalho (que exige bastante de CPUs) de se assistir à blockchain e coordenar jobs na rede.
 
-This is analogous to current cryptocurrency mining pools, in which the implementation for the pools themselves can be centralized or decentralized; they can be run by the central pool operator themselves or they can be open to tap into the millions of available computers around the world all competing to mine the next block. An Orchestrator can provide the transcoding for their own pool if they’d like, which results in the same setup as exists in the Livepeer protocol today, though by doing so they have to be expert at two very separate and distinct jobs, and they compete with those Orchestrators who open up their pools to potentially faster or cheaper sources of transcoding. On the other hand, if an orchestrator runs their own pool then they can trust the video encodings without having the verify the work of the public untrusted transcoders.
+Essa arquiteura remete à de pools de mineração de criptomoedas, que podem ser mais ou menos centralizadas. Podem ser coordenadas por um operador central ou podem ser abertas para que qualquer computador ao redor do mundo possa se conectar e competir para minerar o próximo bloco.
 
-Some benefits of this two-tiered setup include:
+Um Orquestrador pode prover serviços de transcodificação para sua própria pool, o que resultaria no mesmo setup que se tem na versão _alpha_ do protocolo, mas, para fazê-lo, tem de se especializar em dois trabalhos distintos - além de competir com outros Orquestradores otimizando preços por outros caminhos. Por outro lado, se um Orquestrador operar sua própria pool, e somente ela, pode ganhar confiança nos serviços que provê sem incorrer o fardo de se verificar frequentemente o trabalho de Transcodificadores "públicos".
 
-* Anyone who wants to earn fees can do so simply by turning on their hardware and have it race to perform available transcoding jobs. No on chain knowledge, cryptocurrency, staking, deposits, need necessarily be required. This is much like the way anyone can earn bitcoin by mining as part of a pool. However, while access is open to everyone to compete, transcoders with advantages in electricity, bandwidth, and geolocation will likely outperform those running without these competitive setups.
-* Broadcasters get the pooled security of an Orchestrator’s on chain stake, but the underlying scaling implementations and security of public and private pools can be left up to experimentation outside the scope of the Livepeer protocol.
-* Orchestrators can focus on proper operations for protocol interactions and security, rather than focusing on scaling hardware. One orchestrator could orchestrate hundreds of streams concurrently without having to transcode the video itself.
-* Alternate transcoder pool implementations can be available, leveraging GPUs, distributed setups to race for jobs in different regions, and encouraging competition which will result in cheapest available prices for Broadcasters.
+Alguns benefícios do setup em dois níveis são:
 
-While this paper will describe the protocol for Broadcaster/Orchestrator communication and security, it leaves the second tier of Orchestrator/Transcoder protocol to varying implementations. In the simple case where an Orchestrator is its own Transcoder Pool, then the protocol’s security holds, while other trust/performance tradeoffs can be made in alternative implementations for coordinating pools, ranging from centralized and trusted, to decentralized secured by blockchain based stakes and deposit within layer two. It is theorized that since verification of work performed by random actors in a public pool incurs additional cost to an O, then private pools may outperform public pools, however this can potentially be overcome by solid cryptoeconomic deposits, slashing, and verification protocols. 
+* Qualquer um que quiser competir por _fees_ pode fazê-lo, ligando seu hardware e correndo para performar jobs disponíveis. Não é preciso conhecimento sobre o funcionamenot da blockchain, criptomoedas, _staking_, ou depósitos. É como se conectar a uma pool de mineração de bitcoin para ganhar alguns trocados. No entanto, enquanto o acesso é aberto para qualquer um que queira competir, operadores com vantagens relativas a eletricidade, banda larga e localização devem performar melhor que aqueles em cenários menos competitivos.
+* Broadcasters desfrutam da segurança combinada dos _stakes_ de seus Orquestradores onchain, mas implementações para otimização de escalabilidade e segurança, tanto de pools públicas quanto privadas, podem ser experimentadas livremente, fora do escopo do protocolo Livepeer.
+* Orquestradores podem focar somente em operação de interações e garantias da segurança, em vez de se comprometer também a escalar seu hardware. Um Orquestrador pode coordenar centenas de streams concorrentemente, sem ter de transcodificar um vídeo sequer.
+* Implementações alternativas para pools de transcodificação podem ser testadas, fazendo uso de GPUs em setups distribuídos para melhor servir jobs em diferentes regiões, e encorajando competição capaz de resultar em preços menores para Broadcasters.
 
+Enquanto este paper descreve o protocolo para as comunicações e segurança entre Broadcaster/Orquestradores, ele deixa o segundo nível (Orquestrador/Transcodificadores) da arquitetura livre para experimentação por parte de implementações concorrentes. No caso simples em que um Orquestrador é seu próprio pool de transcodificação, a segurança do protocolo se mantém, enquanto outros tradeoffs entre confiabilidade e performance podem ser explorados por pools, abrangendo desde as mais centralizadas até as mais descentralizadas. Teorizamos que, desde que a verificação de trabalho por agentes randômicos em uma pool pública incorra custo adicional a um Orquestrador, então pools privadas devem performar melhor que pools públicas, no entanto, isso pode ser sobrepujado com um esquema funcional de depósitos, punições e protocolos criptoeconômicos de verificação.
 
-### Relaxation of Transcoder Limit and Stake Enforced Security
+### Relaxamento no Limite de Transcodificadores e Segurança Garantida por _Stakes_
+
+🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
+🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 
 The second major change proposed by Streamflow is to relax the artificial limit on number of active Transcoders (Orchestrators in Streamflow). At genesis this parameter was set to 10, and has since expanded to 15, however this still creates a major barrier to entry, in that a node needs increasingly more LPT staked in order to enter the active pool. In Streamflow, the goal is to remove this arbitrary limit and to allow any node who provides enough security in the form of stake (or delegated stake) access to compete on the network.
 
