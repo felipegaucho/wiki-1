@@ -105,15 +105,18 @@ Enquanto este paper descreve o protocolo para as comunicações e segurança ent
 
 ### Relaxamento no Limite de Transcodificadores e Segurança Garantida por _Stakes_
 
+A segunda grande mudança em Streamflow é o relaxamento do limite artificial no número de Transcodificadores (Oequestradores, na versão Streamflow) que podem estar ativos a qualquer momento. Na gênese, esse parâmetro foi cravado em 10, e desde então foi expandido para 15, mas a capacidade baixa ainda cria barreira de entrada significante, uma vez que um nó precisa de cada vez mais LPT aplicados (_staked_) para entrar e permanecer no grupo de Transcodificadores ativos. Em Streamflow, o objetivo é permitir a qualquer nó capaz de prover segurança suficiente (na forma de _stake_ ou _stake_ delegado) o direito à competição.
+
+As razões por trás do limite eram:
+
+* Com o trabalho sendo designado onchain a Transcodificadores ativos, era crítico que eles estivessem online, disponíveis para trabalhar. Poucos Transcodificadores significam uma disponibilidade média maior, além da visualização fácil de suas estatísticas de performance, contribuindo para a saúde da rede. 
+* Limitações impostas por requerimentos de gas nos cálculos para a contabilidade do trabalho de Transcodificadores criaram um teto artificial. Este ainda poderia ser "esticado", mas não por uma ordem de magnitude ou mais.
+* Durante o _alpha_, era importante que 
+
 🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 
-The second major change proposed by Streamflow is to relax the artificial limit on number of active Transcoders (Orchestrators in Streamflow). At genesis this parameter was set to 10, and has since expanded to 15, however this still creates a major barrier to entry, in that a node needs increasingly more LPT staked in order to enter the active pool. In Streamflow, the goal is to remove this arbitrary limit and to allow any node who provides enough security in the form of stake (or delegated stake) access to compete on the network.
 
-The reasons for the limit in the first place were:
-
-* With work assigned on chain to active transcoders, it was critical that they be online and available to perform the work. A constraint on the availability of this position, and easy visibility of their statistics and performance helped ensure a high quality network.
-* Ethereum gas limitations on the calculation and bookkeeping around this active set, created an artificial limit, which could still expand beyond the current point but not by an order of magnitude.
 * During the alpha it was important to be in close contact and coordination with the active set so that they could update software frequently, respond to bugs, and help develop and QA the network.
 * Active transcoders needed enough stake at risk to secure the network, such that if they cheated they would receive a steep economic penalty.
 
