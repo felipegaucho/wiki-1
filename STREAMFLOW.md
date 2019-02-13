@@ -23,7 +23,7 @@ A proposta Streamflow introduz mudanças ao protocolo Livepeer, assim como imple
 * [Proposta do Protocolo Streamflow](#proposta-do-protocolo-streamflow)
     * [Orquestradores e Transcodificadores](#orquestradores-e-transcodificadores)
     * [Relaxamento no Limite de Transcodificadores e Segurança Garantida por _Stakes_](#relaxamento-no-limite-de-transcodificadores-e-segurança-garantida-por-stakes)
-    * [Service Registry](#service-registry)
+    * [Registro de Serviços](#registro-de-serviços)
     * [Offchain Job Negotiation](#offchain-job-negotiation)
     * [Probabilistic Micropayments](#probabilistic-micropayments)
     * [Fault-based On Chain Verification](#fault-based-on-chain-verification)
@@ -111,37 +111,35 @@ As razões por trás do limite eram:
 
 * Com o trabalho sendo designado onchain a Transcodificadores ativos, era crítico que eles estivessem online, disponíveis para trabalhar. Poucos Transcodificadores significam uma disponibilidade média maior, além da visualização fácil de suas estatísticas de performance, contribuindo para a saúde da rede. 
 * Limitações impostas por requerimentos de gas nos cálculos para a contabilidade do trabalho de Transcodificadores criaram um teto artificial. Este ainda poderia ser "esticado", mas não por uma ordem de magnitude ou mais.
-* Durante o _alpha_, era importante que 
+* Durante o _alpha_, era importante que o grupo de Transcodificadores ativos fosse acessível e facilmente comunicável para coordenar upgrades, responder a bugs e garantir a qualidade da rede.
+* Transcodificadores ativos precisavam de _stake_ suficiente em risco, de modo que sofressem penalidade economicamente relevante em caso de comportamento malicioso.
+
+Os efeitos do relaxamento no limite de 15 Transcodificadores ativos nos itens acima serão realizado por meio de:
+
+* Negociação de jobs offchain e _failover_, de modo que Orquestradores indisponíveis ou que não performarem direito somente percam trabalho futuro, mas não prejudiquem a experiência do _Broadcaster_.
+* O grupo ativo não precisa ser calculado a cada _round_, em vez disso, mantendo-se no lugar enquanto Orquestradores aplicam, desaplicam _stakes_ ou são penalizados.
+* Orquestradores em competição ainda precisarão prestar atenção a upgrades, bugs e o desenvolvimento na rede - Orquestradores inativos que não o fizerem simplesmente falharão em atrair trabalho (mas sem prejudicar _Broadcasters_).
+* Agora que uma boa parcela do montante circulante de LPT já participa ativamente da rede, os requerimentos mínimos podem ser setados de modo a garantir _stake_ suficiente assegurando a competição entre um grande número de nós competindo por trabalho na rede.
+
+O número exato de Transcodificadores e Orquestradores ainda é um problema aberto de pesquisa, assim como o método de implementação. Inicialmente, deve-se ter um aumento de uma ordem de magnitude - como uma centena de Orquestradores em vez de 15 -, com o objetivo de se esticar o aumento até três ordens de grandeza (milhares de Orquestrdores) para atender demanda em qualquer região do mundo com redundância. Abaixo estão alguns mecanismos considerados, assim como descrições curtas de alguns de seus tradeoffs:
+
+1. **Expandir N (# de vagas de Orquestradores) de 15 para algo muito maior, como 200**: As coisas funcionariam essencialmente como na versão _alpha_, com uma barreira de entrada consideravelmente menor para se tornar um nó ativo. Mas isso tornaria ações relativas a aplicação/desaplicação mais caras. Problemas de escalabilidade na Ethereum e custos de gas podem ser fatores relevantes.
+2. **Determinar um stake mínimo para se tornar um Orquestrador**: Isso estabeleceria um N máximo possível, ao passo que permitiria a qualquer um saber exatamente o quanto é preciso para se atingir o "piso de segurança" para se manter no grupo ativo. Também permitiria a expansão orgânica do limite ao passo que LPT inflácionários são gerados, encorajando delegadores a buscarem novos Orquestradores que potencialmente estejam oferecendo condições mais atrativas para entrar ou permanecer no grupo ativo e competir por trabalho.
+3. **Determinar uma quantidade de _stake_ fixa para qualquer Orquestrador**: Isso forçaria Orquestradores a operarem nós adicionais, e delegadores a constantemente reaplicarem seus _stakes_, de modo a pôr LPT inflacionários para render. Emergem algumas fraquezas em torno da experiência de usuário resultante tanto para Orquestradores quanto delegadores, assim como detalhes complexos referentes à implementação.
+4. **Eliminar qualquer requerimento mínimo de _stake_ do protocolo, e deixar que cada client configure o _stake_ mínimo que requer para garantir a segurança de um job**: Isso cria o acesso mais aberto possível e aparenta maior grau de descentralização, mas oferece o menor nível de coordenação entre delegadores e Orquestradores - essencialmente, a reputação ganha importância, o que pode levar à centralização no longo prazo conforme delegadores perdem a habilidade coletiva de rotear trabalho.
+
+Enquanto os benefícios e malefícios de cada _approach_ são considerados, é importante notar que o resultado da implementação de qualquer um será uma rede expandida de Orquestradores, mais redundância e competição a serviço de _Broadcasters_, e incentivos continuados para se rotear _stake_ rumo a nós que possam performar serviços adicionais confiavelmente e com eficiência de custo em troca de _fees_.
+
+Um dos pontos positivos dos modelos baseados em um _stake_ mínimo é o fato de que enquanto as _fees_ correm pela rede, há pouca razão para se operar um nó a não ser que seja para competir por trabalho. O número de vagas é limitado, e, para qualquer agente que tenha LPT, é melhor que o _stake_ esteja aplicado em um nó que esteja ativo, redistribuindo parte dos _fees_ que ganha por trabalho, em vez de aplicado a um nó que esteja passivamente recolhendo LPT inflacionários.
+
+### Registro de Serviços
+
+Streamflow expande o papel do Registro de Serviços no protocolo onchain. Orquestradores continuarão a propagandear seu `rewardCut`, `feeShare`, e informações de conexão, mas também propagandearão os serviços que seus nós estão oferecendo, e as regiões que estão servindo. Isso levará a impactos de performance e facilitará a _Broadcasters_ buscarem pelos serviços que desejam, sendo servidos por um nó próximo. Orquestradores não mais anunciarão o preço que estão cobrando, uma vez que preço e disponibilidade serão negociados offchain. Quanto aos serviços que podem ser oferecidos, estas são duas abstrações:
+
 
 🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 
-
-* During the alpha it was important to be in close contact and coordination with the active set so that they could update software frequently, respond to bugs, and help develop and QA the network.
-* Active transcoders needed enough stake at risk to secure the network, such that if they cheated they would receive a steep economic penalty.
-
-The effects on the above of the reduction in this artificial limit will be realized by:
-
-* Offchain job negotiation and failover, meaning that Orchestrators who aren’t available or don’t perform work will just lose future work, but won’t hurt the Broadcaster experience.
-* The active set won’t have to be calculated per round, and instead can just be maintained in place as Orchestrators bond, unbond, or get slashed.
-* Active, competitive Orchestrators will still want to pay close attention to upgrades, bugs, and the development of the network - but inactive Orchestrators who don’t will simply fail to attract work on the network without hurting the Broadcaster experience.
-* Now that a large percentage of the initial stake is actively participating, the requirements can be set such that enough stake and security is in play to secure a larger number of nodes competing for work on the network.
-
-The exact number of target Orchestrators and implementation method is still an open research problem. Initially, there should be an order of magnitude increase - such as hundreds of active Orchestrators rather than 15 - with a goal of eventually expanding into the 1000's in order to offer each service in every region in the world with redundancies. Here are a few considered mechanisms, with a short description of some of their tradeoffs:
-
-1. **Expand N (# of orchestrator slots) from 15 to something much larger, such as 200**: Things would essentially work the way they do today, with a much lower barrier to entry to activating a node. But this would make bonding related actions more expensive. Ethereum scaling and gas issues may come into play.
-2. **Set a minimum required stake to become an Orchestrator**: This would establish a maximum possible `N`, while allowing anyone to know exactly what it takes to achieve that security bar and remain in the active set. It would also enable an expanding network of Orchestrators as inflationary LPT is generated, and encourage Delegators to actively seek out new potential Orchestrators offering fee shares, who are looking to surpass the minimum to become active to compete for work.
-3. **Set a fixed stake amount for any Orchestrator**: This would force Orchestrators to run additional nodes, and Delegators to constantly restake, in order to put their inflatiory LPT to use. But it comes with some weaknesses around the resulting user experience for both Orchestrators and Delegators, as well as some complex implementation details.
-4. **Eliminate any minimum stake requirement from the protocol, and let clients configure how much stake is required to secure a job**: This creates the most open access and is the most decentralized initially, however it offers the least coordination between token holding Delegators and Orchestrators aligning to create a high quality network - essentially reputation plays a larger role, and therefore it could lead to more centralization of the work performed over the longer term as delegators have less collective ability to route work.
-
-While the benefits and weaknesses of the above approaches are being considered, it's important to note that the result achieved from implementing any of the above will be an expanded Orchestrator network, more redundancies and competition provided to the benefit of Broadcasters, and the continued incentives to route stake towards nodes who can perform additional services reliably and cost effectively to the network in exchange for fees.
-
-One of the benefits of the minimum stake models is that as fees flow through the network, there is little reason to operate a node that isn't competing for work on the network. The number of slots is limited, and that stake is better put to use delegating towards a node that would provide a fee share, than simply sitting on an idle node only collecting rewards. 
-
-
-### Service Registry
-
-Streamflow expands the role of the Service Registry in the on chain protocol. Orchestrators will continue to advertise their `rewardCut`, `feeShare`, and connection information, however they will also advertise the services that their node is offering, and region(s) their node is serving. This will lead to performance impacts and Broadcasters can look for the specific services they want, served by a nearby node. Orchestrators will no longer advertise the price that they are charging, as price and availability negotiation is moving off chain. As for considered services, there are likely two abstractions:
 
 1. **Service**
     1. Service identifier - the id that represents this particular service, such as “CPUTranscoding”, “GPUTranscoding”, or “SegmentVerification". There is still work to be done on the exact definition here, and it’s possible the services are more granular such as input/output encoding pairs such as “H264 1080p -> 720p”. 
