@@ -24,12 +24,12 @@ A proposta Streamflow introduz mudanças ao protocolo Livepeer, assim como imple
     * [Orquestradores e Transcodificadores](#orquestradores-e-transcodificadores)
     * [Relaxamento no Limite de Transcodificadores e Segurança Garantida por _Stakes_](#relaxamento-no-limite-de-transcodificadores-e-segurança-garantida-por-stakes)
     * [Registro de Serviços](#registro-de-serviços)
-    * [Negociação de Jobs Offchain](#negociação-de-jobs-offchain)
+    * [Negociação de Jobs Off Chain](#negociação-de-jobs-offchain)
     * [Micropagamentos Probabilísticos (PM)](#micropagamentos-probabilísticos-(PM))
     * [Verificação On Chain Baseada em Faltas](#verificação-on-chain-baseada-em-faltas)
-* [Economic Analysis](#economic-analysis)
+* [Análise Econômica](#análise-econômica)
     * [Livepeer Token](#livepeer-token)
-    * [Delegation as Security and Reputation Signal](#delegation-as-security-and-reputational-signal)
+    * [Delegação como um Sinal de Segurança e Reputação](#delegação-como-um-sinal-de-segurança-e-reputação)
     * [Inflation Into Bonded State and Apathetic Delegators](#infaltion-into-bonded-state-and-apathetic-delegators)
     * [Offchain Engineering Considerations](#offchain-engineering-considerations)
 * [Attacks](#attacks)
@@ -73,9 +73,9 @@ Os updates e novos conceitos dessa proposta impactam uma ou mais das seguintes �
 * A introdução do novo papel de Orquestrador, somando-se aos papeis já existentes dos _Broadcasters_ e Transcodificadores.
 * O relaxamento no limite do número de transcodificadores, permitingo o acesso aberto à competição por trabalho entre quaisquer aspirantes a Orquestradores que possuam tokens e superem os requisitos mínimos de _stake_ e segurança.
 * Um registro de serviços no qual Orquestradores propagandeiam sua disponibilidade e serviços, onchain.
-* Um mecanismo offchain de negociação de preços e designação de jobs entre _Broadcasters_ e Orquestradores.
-* Micropagamentos probabilísticos offchain, com liquidação e depósitos de segurança onchain.
-* Update no esquema de verificação, em que a verificação onchain só precisa ocorrer no caso da observação de uma falta.
+* Um mecanismo off chain de negociação de preços e designação de jobs entre _Broadcasters_ e Orquestradores.
+* Micropagamentos probabilísticos off chain, com liquidação e depósitos de segurança onchain.
+* Update no esquema de verificação, em que a verificação on chain só precisa ocorrer no caso da observação de uma falta.
 
 ### Orquestradores e Transcodificadores
 
@@ -124,7 +124,7 @@ Os efeitos do relaxamento no limite de 15 Transcodificadores ativos nos itens ac
 O número exato de Transcodificadores e Orquestradores ainda é um problema aberto de pesquisa, assim como o método de implementação. Inicialmente, deve-se ter um aumento de uma ordem de magnitude - como uma centena de Orquestradores em vez de 15 -, com o objetivo de se esticar o aumento até três ordens de grandeza (milhares de Orquestrdores) para atender demanda em qualquer região do mundo com redundância. Abaixo estão alguns mecanismos considerados, assim como descrições curtas de alguns de seus tradeoffs:
 
 1. **Expandir N (# de vagas de Orquestradores) de 15 para algo muito maior, como 200**: As coisas funcionariam essencialmente como na versão _alpha_, com uma barreira de entrada consideravelmente menor para se tornar um nó ativo. Mas isso tornaria ações relativas a aplicação/desaplicação mais caras. Problemas de escalabilidade na Ethereum e custos de gas podem ser fatores relevantes.
-2. **Determinar um stake mínimo para se tornar um Orquestrador**: Isso estabeleceria um N máximo possível, ao passo que permitiria a qualquer um saber exatamente o quanto é preciso para se atingir o "piso de segurança" para se manter no grupo ativo. Também permitiria a expansão orgânica do limite ao passo que LPT inflácionários são gerados, encorajando delegadores a buscarem novos Orquestradores que potencialmente estejam oferecendo condições mais atrativas para entrar ou permanecer no grupo ativo e competir por trabalho.
+2. **Determinar um _stake_ mínimo para se tornar um Orquestrador**: Isso estabeleceria um N máximo possível, ao passo que permitiria a qualquer um saber exatamente o quanto é preciso para se atingir o "piso de segurança" para se manter no grupo ativo. Também permitiria a expansão orgânica do limite ao passo que LPT inflácionários são gerados, encorajando delegadores a buscarem novos Orquestradores que potencialmente estejam oferecendo condições mais atrativas para entrar ou permanecer no grupo ativo e competir por trabalho.
 3. **Determinar uma quantidade de _stake_ fixa para qualquer Orquestrador**: Isso forçaria Orquestradores a operarem nós adicionais, e delegadores a constantemente reaplicarem seus _stakes_, de modo a pôr LPT inflacionários para render. Emergem algumas fraquezas em torno da experiência de usuário resultante tanto para Orquestradores quanto delegadores, assim como detalhes complexos referentes à implementação.
 4. **Eliminar qualquer requerimento mínimo de _stake_ do protocolo, e deixar que cada client configure o _stake_ mínimo que requer para garantir a segurança de um job**: Isso cria o acesso mais aberto possível e aparenta maior grau de descentralização, mas oferece o menor nível de coordenação entre delegadores e Orquestradores - essencialmente, a reputação ganha importância, o que pode levar à centralização no longo prazo conforme delegadores perdem a habilidade coletiva de rotear trabalho.
 
@@ -161,9 +161,9 @@ De modo a conduzir uma negociação, um _Broadcaster_ deve interagir com o segui
 
 1. Ler o Registro de Serviços e escanear todos Orquestradores disponíveis, atrás daqueles que batem com o serviço requisitado e os parâmetros de localização, assim como possuintes do mínimo _stake_ imposto.
 2. Usar a informação de conectividade provida para fazer um _ping_ em cada Orquestrador escolhido com um pedido de job.
-   2.1. O pedido de job contém o serviço requisitado e a localização determinada (opcional).
+2.1. O pedido de job contém o serviço requisitado e a localização determinada (opcional).
 3. Orquestradores respondem o quão rápido puderem com um preço para performar o job, se quiserem competir por ele e estiverem disponíveis.
-   3.1. Orquestradores também incluem parâmetros de micropagamentos probabilísticos (PM) na sua resposta (descritos abaixo).
+3.1. Orquestradores também incluem parâmetros de micropagamentos probabilísticos (PM) na sua resposta (descritos abaixo).
 4. _Broadcasters_ coletam esses dados, assim como os tempos de resposta por parte de Orquestradores.
 5. Rodar seus algoritmos internos levando em conta preferências quanto ao tempo de resposta, preço, histórico de trabalhos, parâmetros de PM, requerimentos de redundância e segurança na forma de _stake_, de modo a eleger Orquestrador(es) para se trabalhar com.
 6. Começar a mandar segmentos de vídeo e tíquetes de PM ao(s) Orquestrador(es) selecionado(s).
@@ -202,49 +202,49 @@ A última grande mudança proposta por Streamflow é o ajuste no protocolo de ve
 
 <img src="https://livepeer-dev.s3.amazonaws.com/docs/faultverification.jpg" alt="Fault Based Verificaiton">
 
-Parte do 
+Parte do argumento contra este método é o de que o _Broadcaster_ não tem recursos computacionais suficientes para re-codificar vídeos e checar se o job foi feito corretamente ou não. Usando o mesmo _approach_ randomizado do protocolo original, no entanto, o _Broadcaster_ pode checar 1 a cada `VerificationRate` segmentos, conforme escolher. Pode checar mais, se requer mais confiabilidade, ou pode terceirizar a checagem para qualquer outro nó na rede, pagando-lhe para conferir o trabalho em seu nome (mesmo que este não saiba distinguir uma re-codificação de um job original) - o equivalente a contratsar um segundo Orquestrador para 1 a cada `VerificationRate` segmentos. Pode usar um Orquestrador barato para o trabalho principal, mas depender de um Orquestrador mais caro, reputável, como um verificador confiável. Há também checagens mais baratas que podem ser feitas analisando quadros do vídeo resultante em vez de re-codificar ele por completo, assim como verificação baseada em métricas. Essas checagens mais baratas podem ser usadas preliminarmente, apontar prováveis faltas, e só em caso de sinais positivos, engatilhar uma re-codificação de verificação, e então um desafio via Truebit.
 
-🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 
-🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
+O ponto chave, no entanto, é que o Orquestrador nunca sabe qual segmento será desafiado, e deve esperar que qualquer um esteja sujeito a isso, estando suscetível à perda de uma quantidade relevante de _stake_. Os benefícios de um comportamento desonesto devem exceder o valor de uma punição sobre o depósito de segurança (_stake_) fixado, o que é improvável para a grande maioria dos casos de uso. Adicionalmente, conforme _Broadcasters_ usem redundância, qualquer detecção de inconsistência ou suspeita de falha pode engatilhar a troca imediata para outros Orquestradores.
 
-Part of the argument against this method is that the Broadcaster doesn’t have significant compute resources to re-encode video to check whether the job was done correctly or not. Using the same randomized approach as the original protocol however, the Broadcaster can check 1 out of `VerificationRate` segments should it choose to. It could check more if it requires more reliability, or it could outsource the checking to another node on the network and pay that node to check efficiently on its behalf - the equivalent of hiring a second Orchestrator just for one out of `VerificationRate` segments. They could be using a cheap Orchestrator for the main work, but rely on the high reputation high cost Orchestrator as a more trusted verifier. There are also far cheaper checks that can be done by analyzing frames of the output video rather than fully re-encoding, such as metrics-based verification. These cheap checks can be used to test whether there is a likely fault, and only in that case then re-encode before bringing the challenge to Truebit.
+Um impacto disso é que o custo da resolução de disputa via Truebit não incorre, exceto em casos de desonestidade óbvia - o que deve acontecer poucas vezes, uma vez que não valerá a pena para um Orquestrador intencionalmente "burlar o sistema". Isso torna a rede mais barata de usar que o custo de uma invocação via Truebit a cada `verificationRate` segmentos de vídeo
 
-The key point however, is that the Orchestrator doesn’t know which segments will be challenged, and should any segments fail verification, it stands to lose a tremendous amount of stake. The benefits of cheating would have to exceed the value of a fully slashed fixed stake deposit, which is unlikely for many use cases. Additionally, as Broadcasters may use redundancies, should it detect an inconsistency or have suspicion of cheating from a cheap check-without-re-encoding operation, it could simply choose to work with another Orchestrator on that segment in order to get a proper encoding and insert it into its playlist. 
+## Análise Econômica #################################
 
-One impact of this is that the cost of Truebit doesn’t need to be incurred, except in the case of obvious cheating - and hence almost never, since it should never be worth it for an orchestrator to intentionally cheat. This makes the network far cheaper to use, than the cost of invoking Truebit on every `verificationRate` segments of video. 
-
-
-## Economic Analysis #################################
-
-The changes proposed by Streamflow lead to slightly different incentives and behaviors for both Orchestrators and Delegators, resulting in what will be a more scalable, reliable, cost effective network. This section begins an economic impact analysis of these proposed changes, including a look at the role of the Livepeer Token, the role of delegation, how inflation effects the network, and some offchain economic considerations.
+As mudanças propostas em Streamflow levam a incentivos e comportamentos sutilmente diferentes por parte de Orquestradores e delegadores na rede. Trazem, de forma geral, mais escala, confiabilidade e eficiência de custo. Essa seção inicia uma análise de impacto econômico das mudanças propostas, incluindo um olhar sobre o papel do token Livepeer (LPT), o papel da delegação, como a inflação molda a rede, e outras considerações off chain.
 
 ### Livepeer Token
 
-The Livepeer Token (LPT) could always be described as a work token. Those who staked it had the opportunity to perform work on the network, and therefore earn the future fees (in ETH) for doing said work. Work was routed in direct proportion to stake, if prices offered by all nodes were constant. There were conceived mechanisms from the beginning for a “work requirement”, in that if a node did not perform enough work within some threshold proportion of their stake, then they could be slashed. This was an attempt at ensuring that nodes would actually contribute value (or incur overhead tax for not doing so or faking it), rather than just sit idly on stake and accrue inflation. In addition, there was no requirement that work be done cost effectively or in a performant manner. Competition could be socially encouraged, but not enforced at a protocol level.
+O token Livepeer (LPT) pode ser descrito como um "token de trabalho" (_work token_). Aqueles que o aplicaram (_stake_) ganharam a oportunidade de performar trabalho na rede, e consequentemente ganhar taxas (_fees_) em ETH pelo trabalho em questão. O trabalho sempre foi roteado em proporção direta aos _stakes_, assumindo equivalência constante de preços entre nós (na prática, o trabalho não é distribuído uniformemente). 
 
-The updates to the protocol to relax the artificially constrained number of Orchestrators, and the offchain job negotiation appear to change this direct connection between token and the right to do work on the surface, but upon further analysis, the same value accrues in an equilibrium state. Let’s look at the function that a token holder is attempting to maximize:
+Desde o início, há uma espécie de "requisição compulsória por trabalho" em prática, no sentido de que, se um nó não performasse trabalho suficiente em proporção a seu _stake_, poderia ser punido. Isto era uma tentativa de se garantir que nós contribuiriam valor para a rede de forma contínua, em vez de simplesmente sentar sobre uma porção inerte de _stake_ e receber proventos inflacionários. Vale notar que não havia requerimento de que o trabalho fosse eficiente em termos de custo, ou de alta performance. A competição tinha como ser socialmente encorajada, mas não imposta a nível do protocolo.
 
-`Value accrued in a single round = inflationary LPT earned + fees earned.`
+Os updates de Streamflow que relaxam o limite de Orquestradores ativos e que introduzem um mecanismo de negociação de jobs off chain aparentam alterar essa conexão direta entre o token e o direito de performar trabalho, mas uma análise minuciosa revela que o mesmo valor é capturado por possuintes do token, num estado de equilíbrio. Olhemos para a função que quem possui tokens LPT tende a tentar maximizar:
 
-The inflationary LPT is predictable, based upon the rewardCut of an orchestrator. A Delegator can choose exactly how much LPT they would like to earn in exchange for the QA work they are doing. 
+`Valor capturado em uma única rodada = recompensa inflacionária (LPT) + taxas ganhas.`
 
-The fees earned on the other hand are less in control of the token holder. This is because it depends on: 
+LPT inflacionários são previsíveis, baseados na `rewardCut`do Orquestrador. Um delegador pode escolher exatamente quanto LPT gostaria de ganhar em troca pelo serviço de garantia de qualidade (QA) que provém.
 
-1. How much work their Orchestrator performs
-2. The Orchestrator’s `feeShare`
-3. How much total stake is delegated towards the Orchestrator, and therefore what percent of the fee pool they are entitled to
+Por outro lado, as taxas ganhas estão menos sob controle do dono de tokens. Isso ocorre porque estas dependem de:
 
-At the completion of a round, a Delegator will be able to calculate the earning power of their staked LPT. It’s this fee ratio:
+1. Quanto trabalho o Orquestrador performa;
+2. A `feeShare` do Orquestrador;
+3. Quanto do _stake_ total está delegado para o Orquestrador em questão, e, por consequência, quantos porcento da pool de taxas (_fee pool_) ele tem direito a.
 
-`ETH in fees / unit of staked LPT`
+Quando completa uma rodada, o delegador poderá calcular o potencial de renda dos LPT que tem aplicados (em _stake_). Deriva dessa razão:
 
-Which will be the visible statistic that Delegators can use to compare Orchestrators to one another, and predictably, delegation should shift from round to round towards nodes where there is opportunity to maximize this ratio. In short, why stick with a node who’s sharing out 1gwei /  LPT staked when there’s another node you could switch to that is sharing out 2 gwei / LPT staked?
+`ETH em taxas / unidades de LPT aplicados (_staked_)`
+
+O que será uma estatística visível na qual delegadores podem se basear para comparar Orquestradores e tomar decisões. Previsivelmente, delegações devem fluir, entre uma rodada e outra, para nós que apresentem oportunidades de se maximizar essa razão. Em suma, porque se ater a um nó que redistribui 1gwei por LPT aplicado (_staked_), quando há outros nós dispostos a redistribuir 2gwei por LPT aplicado?
 
 <img src="https://livepeer-dev.s3.amazonaws.com/docs/feeratio.jpg" alt="Fee Ratio">
 
-But then it is worth noting that the act of switching more stake onto this opportunistic node, means that the fees will be split amongst more stake, and the fee ratio will decrease. The equilibrium state is that nodes who are performing more work (earning more) have more stake, and nodes performing less work with same fee share have less stake. Essentially all competitive nodes should end up with the same equilibrium fee ratios, with intelligently delegated stake earning a Delegator the equilibrium return - and hence staked LPT intelligently applied yields access to do work to earn fees on the network independently of how jobs are assigned.
+Vale notar que o ato de se realocar _stake_ para outro nó com melhor custo de oportunidade vai significar que as _fees_ serão divididas entre uma quantia maior de _stake_, o que fará a razão (acima) decair. O estado de equilíbrio é aquele em que nós que estão performando mais trabalho (recebendo mais) tem mais _stake_, e nós performando menos com a mesma `feeShare` tem menos _stake_. Essencialmente todos os nós competitivos devem convergir para a mesma razão, com delegadores inteligentes alocando _stake_ de modo a obter um retorno também em estado de equilíbrio. No fim, a delegação inteligente de LPT inteligentemente gera acesso a trabalho que dá direito ao ganho de taxas, independentemente de como jobs são designados ou roteados na rede.
 
-### Delegation as Security and Reputational Signal
+### Delegação como um Sinal de Segurança e Reputação
+Um
+
+🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 
+🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 
 One negative outcome people could foresee is that nodes who are winning a lot of work could provide 0% fee share, and hence not attract any delegation. This is ok - they are running hardware and incurring costs, and providing great service to the network - they may not need delegation. But delegation on the other hand provides additional security - it is more stake that can be slashed if the node cheats - more reputational signal. Clients use this signal to select nodes to work with, and so a competitive node advertising a > 0% fee share would be more likely to attract stake, and hence work - as long as they can perform it competitively or better or cheaper than the 0% fee share node. Again, this contributes to the flexible setups and use cases of the network. It increases the opportunity for competition, decentralization, diversity, and resilience of the network.
 
