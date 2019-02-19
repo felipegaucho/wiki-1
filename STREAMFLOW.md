@@ -136,6 +136,9 @@ Um dos pontos positivos dos modelos baseados em um _stake_ mínimo é o fato de 
 
 Streamflow expande o papel do Registro de Serviços no protocolo onchain. Orquestradores continuarão a propagandear seu `rewardCut`, `feeShare`, e informações de conexão, mas também propagandearão os serviços que seus nós estão oferecendo, e as regiões que estão servindo. Isso levará a impactos de performance e facilitará a _Broadcasters_ buscarem pelos serviços que desejam, sendo servidos por um nó próximo. Orquestradores não mais anunciarão o preço que estão cobrando, uma vez que preço e disponibilidade serão negociados offchain. Quanto aos serviços que podem ser oferecidos, estas são duas abstrações:
 
+1. **Serviço**
+    1. Identificador de serviço - o ID que representa um serviço específico, como "CPUTranscoding
+
 
 🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
