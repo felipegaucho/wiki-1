@@ -24,9 +24,9 @@ A proposta Streamflow introduz mudanças ao protocolo Livepeer, assim como imple
     * [Orquestradores e Transcodificadores](#orquestradores-e-transcodificadores)
     * [Relaxamento no Limite de Transcodificadores e Segurança Garantida por _Stakes_](#relaxamento-no-limite-de-transcodificadores-e-segurança-garantida-por-stakes)
     * [Registro de Serviços](#registro-de-serviços)
-    * [Offchain Job Negotiation](#offchain-job-negotiation)
-    * [Probabilistic Micropayments](#probabilistic-micropayments)
-    * [Fault-based On Chain Verification](#fault-based-on-chain-verification)
+    * [Negociação de Jobs Offchain](#negociação-de-jobs-offchain)
+    * [Micropagamentos Probabilísticos (PM)](#micropagamentos-probabilísticos-(PM))
+    * [Verificação On Chain Baseada em Faltas](#verificação-on-chain-baseada-em-faltas)
 * [Economic Analysis](#economic-analysis)
     * [Livepeer Token](#livepeer-token)
     * [Delegation as Security and Reputation Signal](#delegation-as-security-and-reputational-signal)
@@ -41,9 +41,9 @@ A proposta Streamflow introduz mudanças ao protocolo Livepeer, assim como imple
     * [Broadcaster Doublespend Mitigation](#broadcaster-doublespend-mitigation)
     * [VOD Payments](#vod-payments)
 * [Migration Path](#migration-path)
-* [Appendix](#appendix)
+* [Apêndice](#apêndice)
     * [Appendix A: Probabilistic Micropayments Workflow](#appendix-a-probabilistic-micropayments-workflow)
-* [References](#references)
+* [Referências](#referências)
 
 ## Introdução e Background ###########################################
 
@@ -137,76 +137,75 @@ Um dos pontos positivos dos modelos baseados em um _stake_ mínimo é o fato de 
 Streamflow expande o papel do Registro de Serviços no protocolo onchain. Orquestradores continuarão a propagandear seu `rewardCut`, `feeShare`, e informações de conexão, mas também propagandearão os serviços que seus nós estão oferecendo, e as regiões que estão servindo. Isso levará a impactos de performance e facilitará a _Broadcasters_ buscarem pelos serviços que desejam, sendo servidos por um nó próximo. Orquestradores não mais anunciarão o preço que estão cobrando, uma vez que preço e disponibilidade serão negociados offchain. Quanto aos serviços que podem ser oferecidos, estas são duas abstrações:
 
 1. **Serviço**
-    1. Identificador de serviço - o ID que representa um serviço específico, como "CPUTranscoding
+    1. Identificador de serviço - o ID que representa um serviço específico, como "CPUTranscoding", "GPUTranscoding", ou "SegmentVerification". Ainda há trabalho a ser feito na definição exata, e é possível que os serviços sejam identificados mais granularmente, como por pares de input/output, por exemplo "H264 1080p -> 720p".
+    2. Função verificadora - o endereço que aponta para a função a ser invocada na necessidade de se verificar a correção na execução do serviço (pode ser nulo).
 
+2. **Localização**
+    1. A implementação está por ser definida, mas esta é provavelmente uma abstração que especifica uma matriz de regiões servidas pelo nó.
+    
+A presença desses atributos permitirá a _Broadcasters_ filtrarem o Registro de Serviços atrás de nós que se encaixam na localização a ser servida e tipo de job demandado. Localização foi ignorada previamente na versão _alpha_, mas pode ser crítico para a entrega de vídeo ao vivo que a audiência esteja geograficamente próxima à fonte da transmissão, devido a questões de comunicação de rede, e à potencial latência introduzida por múltiplos "pulos" em conexões de nó para nó.
 
-🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
-🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
+Como a localização propagandeada por um nó pode ser falsa, como em muitos aspectos de Streamflow, a implementação do _client_ deve rapidamente descobrir e filtrar Orquestradores de baixa performance, custando-lhes o direito a trabalho e taxas futuras. Nós honestos, maximizando suas relações bem sucedidas com _Broadcasters_, taxas e estatísticas de reputação, devem propagandear informação útil de localização, para continuar tendo sucesso em negociações, designações e performance sustentável de jobs.
 
+Conforme nós capturam LPT inflacionário, de modo a pô-los em uso, a coisa mais eficiente a se fazer é adicionar um nó novo ao Registro de Serviços, com a capacidade de servir uma zona ou localização para a qual há demanda, mas ainda não há oferta suficiente ou com bom custo-benefício - expandindo o alcance da rede e a habilidade de servir diferentes casos e clientes.
 
-1. **Service**
-    1. Service identifier - the id that represents this particular service, such as “CPUTranscoding”, “GPUTranscoding”, or “SegmentVerification". There is still work to be done on the exact definition here, and it’s possible the services are more granular such as input/output encoding pairs such as “H264 1080p -> 720p”. 
-    1. Verification function - the address pointer to the verification function which will be run to invoke on chain verification of the correctness of this service (can be null if there is no verification available). 
-1. **Locations**
-    1. Implementation is TBD, but this is likely an abstraction that specifies an array of the regions that this node is willing or able to serve. 
+### Negociação de Jobs Offchain
+A mudança de um esquema de designação de jobs on chain para um off chain é talvez a maior das propostas por Streamflow. Muda a assumpção de que jobs são roteados estritamente por _stakes_, e isso será análisado em uma seção subsequente, mas também traz tremendos benefícios. Nomeadamente:
 
-The combination of advertising these will allow Broadcasters to filter the Service Registry for nodes whom are advertising the services and locations that they would like to serve in order to be efficient in beginning an offchain negotiation with the proper service providers. Location was a previously ignored factor in the alpha version of Livepeer, however it can be critical for live video ingest that the nodes receiving the video are located in close proximity to the video source, due to various networking issues that can occur and create instability over longer connections with more hops.
+* **Disponibilidade** - _Broadcasters_ poderão garantir que Orquestradores estão disponíveis para trabalhar antes de entrar num acordo com eles.
+* **Redundância** - Se um Orquestrador estiver indisponível antes ou durante um job, é só mudar para outro Orquestrador. Ou começar a trabalhar com múltiplos Orquestradores em primeiro lugar.
+* **Velocidade** - Comece o trabalho imediatamente. Não é preciso mais esperar por uma confirmação on chain.
+* **Eficiência de custo** - Não há mais custos associados à requisição de trabalho pela rede ou gas.
 
-An advertised location can of course be falsified, however, like many aspects of Streamflow, client implementations will quickly discover and filter out poorly performing Orchestrators costing them the ability to do future work and earn fees. Honestly performing nodes, maximizing their client-calculated Broadcaster success relationships, fees, and reputational statistics will likely advertise helpful location information that leads to successfully negotiated, assigned, and sustainable long running jobs.
+De modo a conduzir uma negociação, um _Broadcaster_ deve interagir com o seguinte protocolo:
 
-As nodes earn inflationary LPT, in order to put it to optimized use, the most effective thing they can do is add a new node to the service registry which serves a capability or location for which there is demand, but not enough reliable or cost effective supply - therefore expanding the footprint of the network and ability to serve various customers and use cases. 
+1. Ler o Registro de Serviços e escanear todos Orquestradores disponíveis, atrás daqueles que batem com o serviço requisitado e os parâmetros de localização, assim como possuintes do mínimo _stake_ imposto.
+2. Usar a informação de conectividade provida para fazer um _ping_ em cada Orquestrador escolhido com um pedido de job.
+   2.1. O pedido de job contém o serviço requisitado e a localização determinada (opcional).
+3. Orquestradores respondem o quão rápido puderem com um preço para performar o job, se quiserem competir por ele e estiverem disponíveis.
+   3.1. Orquestradores também incluem parâmetros de micropagamentos probabilísticos (PM) na sua resposta (descritos abaixo).
+4. _Broadcasters_ coletam esses dados, assim como os tempos de resposta por parte de Orquestradores.
+5. Rodar seus algoritmos internos levando em conta preferências quanto ao tempo de resposta, preço, histórico de trabalhos, parâmetros de PM, requerimentos de redundância e segurança na forma de _stake_, de modo a eleger Orquestrador(es) para se trabalhar com.
+6. Começar a mandar segmentos de vídeo e tíquetes de PM ao(s) Orquestrador(es) selecionado(s).
+7. Orquestrador(es) verifica o depósito onchain do _Broadcaster_ (ver esquema de PM, abaixo), e, se o depósito está acima do mínimo, performa o trabalho, enviando de volta o segmento transcodificado para o _Broadcaster_.
 
-### Offchain Job Negotiation
-The shift from on chain job assignment to off chain job negotiation is perhaps the biggest change proposed by Streamflow. It changes the assumption that jobs are routed strictly according to stake, and this will be analyzed below in the analysis section, but it also comes with tremendous benefits. Namely:
+O passo 5 deste protocolo deixa bastante aberto para a implementação. O sumário, aqui, é basicamente que _Broadcasters_ podem escolher seus próprios Orquestradores, e não precisam interagir com a blockchain para anunciar o job que demandam ou tê-lo designado para alguém.
 
-* **Availability** - Broadcasters will be able to ensure that Orchestrators are available to do work before contracting with them.
-* **Redundancy** - If an Orchestrator is unavailable before or during the job, simply switch to another Orchestrator. Or begin working with multiple orchestrators in the first place for redundancy.
-* **Speed** - Begin work immediately. There is no need to wait for an on chain confirmation.
-* **Cost effective** - There is no on chain job or gas costs associated with requesting service on the network.
-
-In order to conduct a negotiation, a Broadcaster will interact with the following protocol:
-
-1. Read the Service Registry and scan through all available Orchestrators that match their requested service and location parameters, with the minimum required stake.
-1. They will then use the provided connectivity information to ping each of them with a job request.
-    1. A job request contains the service requested and location requested (optional).
-1. Orchestrators respond as quickly as possible with a price quote for performing the job, if they would like to compete for it and have current availability.
-    1. Orchestrators also include probabilistic micropayments (PM) parameters in their price quote (described below).
-1. Broadcasters collect this response data, along with the response times from the orchestrators.
-1. They run their own internal algorithm taking into account preferences with regards to response time, price, past work history, PM params, redundancy requirements, security in the form of stake, in order to elect which Orchestrator(s) to work with.
-1. They begin sending video segments and PM tickets to the selected Orchestrator(s).
-1. Orchestrator verifies Broadcaster’s on chain PM deposit, and if the deposit level is sufficient, it performs work sending encoded segment back to Broadcaster.
-
-Clearly step 5 in this protocol leaves a lot up to implementation. The summary here is that Broadcasters can choose their own Orchestrators, and they don’t need to go on chain to announce the job or be assigned one. 
-
-They can work with their own Orchestrator if they’d like, and then start sending segments only to another candidate when they reach their own compute capacity. They can work with the same node that they have a long standing relationship with, and only switch over to another when that node goes down or becomes unavailable. They can start with 5x redundancy CPU encoding from the beginning for a very important premium live stream, or they can use the cheapest possible GPU encoding across the world for a very low reliability on demand job in order to save costs.
+Podem trabalhar com um Orquestrador proprietário se quiserem, e começar a enviar segmentos para outros candidatos somente depois de atingirem sua capacidade máxima. Podem trabalhar com os mesmos nós com os quais mantém relacionamentos de longa data, e trocar para outros somente quando estes estiverem indisponíveis. Podem começar com alta redundância e performance de CPUs para um evento premium ao vivo importante, ou podem escolher a pool de GPUs mais barata ao redor do mundo para um serviço on-demand com requerimentos simples, de modo a cortar custos.
 
 <img src="https://livepeer-dev.s3.amazonaws.com/docs/pricenegotiation.jpg" alt="Offchain Job Negotiation" style="width: 750px">
 
-Switching and adding redundancy does not introduce any on chain transaction cost overhead for the Broadcaster, whereas in the alpha version of the protocol, switching requires an additional on chain transaction and 15-30+ second confirmation times.
+Adicionar ou subtrair redundância não introduz overhead na forma de custos de transação on chain para _Broadcasters_. Na versão _alpha_, mudança do gênero requeria uma transação e 15-30 segundos para confirmação on chain.
 
-Note that steps 1-4 can optionally be performed in the background on an ongoing basis, rather than at stream inception. If a Broadcaster is handling many concurrent streams, they may find it worth it to keep an up to date price/service table for all available Orchestrators, such that they can just begin working with one at any moment on any stream.
+Note que os passos 1-4 podem opcionalmente acontecer no background, de modo frequente, em vez de pontualmente no começo de uma nova transmissão. Se um _Broadcaster_ mantém várias transmissões concorrentemente, ele pode achar que vale a pena manter um feed atualizado de serviços/preços para todos Orquestradores disponíveis na rede, de modo que pode começar a trabalhar com um que julgue atraente a qualquer momento, sem interferência em suas transmissões.
 
+### Micropagamentos Probabilísticos (PM)
+O maior impacto de economia de custos em Streamflow vem desta proposta de micropagamentos probabilísticos (PM). Anteriormente, o protocolo usava um flow de deposit() -> job() -> claim() -> verify() -> distributeFees() para liberar pagamentos por trabalho performado. As 3 últimas dessas transações precisavam ser executadas para cada 1000 segmentos de vídeo, na média (ou mais), e fazer 5 transações para um job curto era proibitivo para qualquer Transcodificador.
 
-### Probabilistic Micropayments
-The largest impact on cost savings from Streamflow will come from this Probabilistic Micropayments (PM) proposal. Formerly, the protocol used a deposit() -> job() -> claim() -> verify() -> distributeFees() transaction flow to release payments for performed work. The last three of these transactions needed to be performed for every 1000 segments of video on average (or more), and doing five transactions for a short job would be completely cost prohibitive for Transcoders.
+Para um contexto em PM, sugere-se revisar um artigo pelo time da Orchid Protocol, sobre o uso do esquema numa rede descentralizada de VPN, assim como pesquisa acadêmica prévia [[3, 4, 5](#referências)]. Em suma, o _Broadcaster_ emite tíquetes assinados junto a cada segmento de vídeo enviado ao Orquestrador. O tíquete tem um valor de face alto se ele "for vencedor", e permitir ao Orquestrador trocá-lo por dinheiro on chain. Contudo, a probabilidade de que um tíquete "seja vencedor" é baixa, fazendo com que o valor esperado de cada tíquete converja para o preço por segmento com que o _Broadcaster_ e o Orquestrador concordaram. Ao longo do tempo, _Broadcasters_ pagarão sempre quase o valor exato pelo trabalho solicitado, devido às probabilidades em jogo.
 
-For background on PM, it is suggested to review a post from the Orchid Protocol team on its use in a decentralized VPN network, as well as the previous academic research[[3, 4, 5](#references)]. The summary is that the Broadcaster issues signed tickets along with every single segment of work to the Orchestrator. The ticket has a high face value if it “wins”, allowing the Orchestrator to cash it in on chain for that high amount. However, the probability of it winning is very low, so the expected value of each ticket is the price/segment that the Broadcaster and Orchestrator agree upon. Over the long term, Broadcasters will pay nearly exactly what they agree per segment to Orchestrators, and Orchestrators will be paid nearly exactly the correct amount for the work they performed, due to the probabilities at work.
+Usando PM, os custos de se coletar pagamentos podem ser aqueles de uma única transação leve, e o valor a ser coletado pode ser agrupado em qualquer quantia desejada pelo Orquestrador. Por exemplo, o Orquestrador pode decidir liquidar seus pagamentos sempre que atingir o equivalente a U$10 em ETH, o que, a um custo de transação da liquidação (derivado de gas) em torno de U$0.10, significa um overhead de 1%. Se os custos de gas aumentarem subitamente em 10x, o Orquestrador pode subir o seu limite mínimo de liquidação para U$100, mantendo o mesmo overhead de 1%, ou pode incorrer um overhead maior se quiser manter a frequência de pagamentos. Assim como a maioria das decisões de design em Streamflow, isso será decidido pelo mercado e configurável pelo client, em vez de imposto pelo protocolo.
 
-By using PM, the cost of collecting payments can be the cost of a single lightweight transaction, and the payment amount collected can effectively be batched into whatever amount the Orchestrator is willing to cash. For example, the Orchestrator can always cash in payments of $10 worth of ETH, whereas the cost of cashing the ticket due to gas prices may be $0.10, for a 1% overhead. If gas prices increase 10x, the Orchestrator can instead cash payments of $100, maintaining the same 1% overhead, or they can absorb more overhead if they’d like to do so to be competitive. Fitting with philosophy driving many of the Streamflow proposal updates, it will be market driven and client configurable rather than protocol enforced. 
+A habilidade de um _Broadcaster_ pagar, no momento em que um Orquestrador efetua uma liquidação, é assegurada por um depósito onchain, "time-locked", com uma cláusula programada de penalidade.
 
-A Broadcaster’s ability to pay when an Orchestrator cashes out is secured by an on chain, time locked deposit, and penalty escrow. 
+Devido à negociação off chain e a potenciais redundâncias que um _Broadcaster_ pode requerir, eles podem mandar tíquetes de PM para vários Orquestradores de uma vez, começar ou parar trabalho com um Orquestrador a qualquer hora, e, do mesmo jeito, Orquestradores podem encerrar a qualquer momento um trabalho para um _Broadcaster_ se determinar que não está sendo pago corretamente ou quiser ficar offline. 
 
-Due to the offchain job negotiation and potential redundancies a Broadcaster may require, they can send PM tickets around to many orchestrators at once, start and stop work with any one Orchestrator at any time, and likewise, and Orchestrator can stop performing work at any time for a Broadcaster if they determine they aren’t paying correctly or want to go offline. This shifts the mental model tremendously from a “Job” in Livepeer being an entire continuous stream, to a Job being a single segment of video along with a single PM ticket.
+Isto muda o modelo mental prévio de que um job era uma transmissão inteira e contínua, fazendo-nos enxergá-lo agora somente como um segmento de vídeo junto a um tíquete de PM.
 
-The full PM workflow is left for [an appendix](#appendix), since it touches on verification, off chain negotiation and many other areas such as double spend risk and mitigation.
+O esquema de PM completo está no [apêndice](#apêndice), uma vez que tangencia questões de verificação, detalhes da negociação off chain, e outras áreas como riscos de gastos duplos e mitigações.
 
-### Fault-based On Chain Verification
-The final major change proposed by Streamflow is to adjust the verification protocol in order to reduce costs and avoid the data availability problem. Previously, transcoders were required to invoke Truebit verification for 1 out of every `VerificationRate` segments, which was set to 1 out of 1000 segments originally. This is very expensive, and is required whether the Transcoder did the work correctly or incorrectly. The new proposal is that:
+### Verificação On Chain Baseada em Faltas
+A última grande mudança proposta por Streamflow é o ajuste no protocolo de verificação para reduzir custos e contornar o problema da disponibilidade de dados. Previamente, Transcodificadores precisavam invocar verificação via Truebit para 1 de cada `VerificationRate` segmentos, o que foi setado originalmente a 1 de cada 1000. Isso se mostrou caro, e era necessário tivesse o Transcodificador performado o trabalho corretamente ou não. A proposta nova é a de que:
 
-* Broadcasters are responsible to verify received transcoded segments, and only challenge them to Truebit on chain if they believe that the segment failed verification.
-* If Truebit (or other appropriate on chain verification function) agrees, then the Orchestrator’s stake is slashed, and the Broadcaster receives a significant bounty.
+* _Broadcasters_ são responsáveis por verificar segmentos transcodificados recebidos, e só desafiarão eles via Truebit on chain se acreditarem que o segmento está comprometido.
+* Se Truebit (ou outra função apropriada de verificação on chain) "concordar", então o _stake_ do Orquestrador é devidamente punido, sendo que o _Broadcaster_ recebe um bônus significante.
 
 <img src="https://livepeer-dev.s3.amazonaws.com/docs/faultverification.jpg" alt="Fault Based Verificaiton">
+
+Parte do 
+
+🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 
+🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
 
 Part of the argument against this method is that the Broadcaster doesn’t have significant compute resources to re-encode video to check whether the job was done correctly or not. Using the same randomized approach as the original protocol however, the Broadcaster can check 1 out of `VerificationRate` segments should it choose to. It could check more if it requires more reliability, or it could outsource the checking to another node on the network and pay that node to check efficiently on its behalf - the equivalent of hiring a second Orchestrator just for one out of `VerificationRate` segments. They could be using a cheap Orchestrator for the main work, but rely on the high reputation high cost Orchestrator as a more trusted verifier. There are also far cheaper checks that can be done by analyzing frames of the output video rather than fully re-encoding, such as metrics-based verification. These cheap checks can be used to test whether there is a likely fault, and only in that case then re-encode before bringing the challenge to Truebit.
 
@@ -343,7 +342,7 @@ In conclusion, the proposals contained within this document aim to shine a light
 All feedback, ideas, and input are welcomed, so please do not hesitate to drop into [The Livepeer Forum](https://forum.livepeer.org) or [Discord Chat](https://discord.gg/RR4kFAh) to participate.
 
 
-## Appendix ################################
+## Apêndice ################################
 
 ### Appendix A: Probabilistic Micropayments Workflow
 
@@ -366,7 +365,7 @@ All feedback, ideas, and input are welcomed, so please do not hesitate to drop i
     
 For a full analysis and specification of the ticket data structures, double spend prevention, and other design considerations, see this [external document](https://hackmd.io/uHMFeNSyS_GyzwnO3Ld74A?view).
 
-## References ###########################################
+## Referências ###########################################
 
 1. Livepeer Whitepaper - Doug Petkanics, Eric Tang - <https://github.com/livepeer/wiki/blob/master/WHITEPAPER.md>
 2. The Video Miner, A Path To Scaling Video Transcoding -Philipp Angele  - <https://medium.com/livepeer-blog/the-video-miner-a-path-to-scaling-video-transcoding-a3487d232a1>
