@@ -1,4 +1,4 @@
-# Livepeer Streamflow Paper
+# 🇵🇹🇧🇷 Livepeer Streamflow Paper
 
 **Escalabilidade da Livepeer através de Orquestragem, Micropagamentos Probabilísticos, e Negociação de Jobs Offchain**
 
@@ -84,7 +84,7 @@ Na versão _alpha_, um Transcodificador na rede Livepeer é um nó ciente do pro
 * Orquestradores, que são cientes do protocolo, negociam com _Broadcasters_, são responsáveis pela entrega de segmentos verificadamente transcodificados de volta a eles, e coordenam a execução de trabalho entre um grupo potencialmente grande de Transcodificadores.
 * Transcodificadores, que não necessariamente são cientes do protocolo, do mecanismo de _staking_, ou da blockchain, mas, por outro lado, têm hardware competitivo em custo-benefício, que se dedica somente ao trabalho de transcodificar vídeos da maneira mais rápida e barata possível, conforme coordenado por Orquestradores.
 
-<img src="https://livepeer-dev.s3.amazonaws.com/docs/otsplit.jpg" alt="Orchestrator Transcoder Split" style="width:750px">
+<img src="https://i.imgur.com/ebIyKW2.png" alt="Orchestrator Transcoder Split" style="width:750px">
 
 **O primeiro nível** dessa arquitetura é similar ao protocolo _alpha_ da Livepeer, mas Transcodificadores são renomeados como Orquestradores. Orquestradores aplicam (_stake_) seus tokens LPT como depósitos de segurança contra o trabalho que performam, ao passo que, caso façam mal à rede, incorrem penalidade econômica. _Broadcasters_ são cientes dos Orquestradores, negociam jobs com eles, e recebem segmentos transcodificados de volta, com a habilidade de induzir penalidades aos Orquestradores caso estes ajam desonestamente.
 
@@ -173,7 +173,7 @@ O passo 5 deste protocolo deixa bastante aberto para a implementação. O sumár
 
 Podem trabalhar com um Orquestrador proprietário se quiserem, e começar a enviar segmentos para outros candidatos somente depois de atingirem sua capacidade máxima. Podem trabalhar com os mesmos nós com os quais mantém relacionamentos de longa data, e trocar para outros somente quando estes estiverem indisponíveis. Podem começar com alta redundância e performance de CPUs para um evento premium ao vivo importante, ou podem escolher a pool de GPUs mais barata ao redor do mundo para um serviço on-demand com requerimentos simples, de modo a cortar custos.
 
-<img src="https://livepeer-dev.s3.amazonaws.com/docs/pricenegotiation.jpg" alt="Offchain Job Negotiation" style="width: 750px">
+<img src="https://i.imgur.com/kukI6SG.png" alt="Offchain Job Negotiation" style="width: 750px">
 
 Adicionar ou subtrair redundância não introduz overhead na forma de custos de transação on chain para _Broadcasters_. Na versão _alpha_, mudança do gênero requeria uma transação e 15-30 segundos para confirmação on chain.
 
@@ -200,7 +200,7 @@ A última grande mudança proposta por Streamflow é o ajuste no protocolo de ve
 * _Broadcasters_ são responsáveis por verificar segmentos transcodificados recebidos, e só desafiarão eles via Truebit on chain se acreditarem que o segmento está comprometido.
 * Se Truebit (ou outra função apropriada de verificação on chain) "concordar", então o _stake_ do Orquestrador é devidamente punido, sendo que o _Broadcaster_ recebe um bônus significante.
 
-<img src="https://livepeer-dev.s3.amazonaws.com/docs/faultverification.jpg" alt="Fault Based Verificaiton">
+<img src="https://i.imgur.com/yuwz9Uk.png" alt="Fault Based Verificaiton">
 
 Parte do argumento contra este método é o de que o _Broadcaster_ não tem recursos computacionais suficientes para re-codificar vídeos e checar se o job foi feito corretamente ou não. Usando o mesmo _approach_ randomizado do protocolo original, no entanto, o _Broadcaster_ pode checar 1 a cada `VerificationRate` segmentos, conforme escolher. Pode checar mais, se requer mais confiabilidade, ou pode terceirizar a checagem para qualquer outro nó na rede, pagando-lhe para conferir o trabalho em seu nome (mesmo que este não saiba distinguir uma re-codificação de um job original) - o equivalente a contratsar um segundo Orquestrador para 1 a cada `VerificationRate` segmentos. Pode usar um Orquestrador barato para o trabalho principal, mas depender de um Orquestrador mais caro, reputável, como um verificador confiável. Há também checagens mais baratas que podem ser feitas analisando quadros do vídeo resultante em vez de re-codificar ele por completo, assim como verificação baseada em métricas. Essas checagens mais baratas podem ser usadas preliminarmente, apontar prováveis faltas, e só em caso de sinais positivos, engatilhar uma re-codificação de verificação, e então um desafio via Truebit.
 
@@ -236,7 +236,7 @@ Quando completa uma rodada, o delegador poderá calcular o potencial de renda do
 
 O que será uma estatística visível na qual delegadores podem se basear para comparar Orquestradores e tomar decisões. Previsivelmente, delegações devem fluir, entre uma rodada e outra, para nós que apresentem oportunidades de se maximizar essa razão. Em suma, porque se ater a um nó que redistribui 1gwei por LPT aplicado (_staked_), quando há outros nós dispostos a redistribuir 2gwei por LPT aplicado?
 
-<img src="https://livepeer-dev.s3.amazonaws.com/docs/feeratio.jpg" alt="Fee Ratio">
+<img src="https://i.imgur.com/Udiu57s.png" alt="Fee Ratio">
 
 Vale notar que o ato de se realocar _stake_ para outro nó com melhor custo de oportunidade vai significar que as _fees_ serão divididas entre uma quantia maior de _stake_, o que fará a razão (acima) decair. O estado de equilíbrio é aquele em que nós que estão performando mais trabalho (recebendo mais) tem mais _stake_, e nós performando menos com a mesma `feeShare` tem menos _stake_. Essencialmente todos os nós competitivos devem convergir para a mesma razão, com delegadores inteligentes alocando _stake_ de modo a obter um retorno também em estado de equilíbrio. No fim, a delegação inteligente de LPT inteligentemente gera acesso a trabalho que dá direito ao ganho de taxas, independentemente de como jobs são designados ou roteados na rede.
 
