@@ -30,19 +30,19 @@ A proposta Streamflow introduz mudanças ao protocolo Livepeer, assim como imple
 * [Análise Econômica](#análise-econômica)
     * [Livepeer Token](#livepeer-token)
     * [Delegação como um Sinal de Segurança e Reputação](#delegação-como-um-sinal-de-segurança-e-reputação)
-    * [Inflation Into Bonded State and Apathetic Delegators](#infaltion-into-bonded-state-and-apathetic-delegators)
-    * [Offchain Engineering Considerations](#offchain-engineering-considerations)
-* [Attacks](#attacks)
-    * [Delegator Squeezing](#delegator-squeezing)
-    * [Delegator Fee Theft](#delegator-fee-theft)
-* [Open Research Areas](#open-research-areas)
-    * [Non Deterministic Verification](#non-deterministic-verification)
-    * [Public Transcoder Pool Protocols](#public-transcoder-pool-protocols)
-    * [Broadcaster Doublespend Mitigation](#broadcaster-doublespend-mitigation)
-    * [VOD Payments](#vod-payments)
-* [Migration Path](#migration-path)
+    * [Inflação que Vira _stake_ Aplicado e Delegadores Apáticos](#inflação-que-vira-stake-aplicado-e-delegadores-apáticos)
+    * [Considerações de Engenharia Off Chain](#considerações-de-engenharia-off-chain)
+* [Ataques](#ataques)
+    * [_Squeezing_ de Delegadores](#squeezing-de-delegadores)
+    * [Roubo da Taxa do Delegador](#roubo-da-taxa-do-delegador)
+* [Áreas Abertas de Pesquisa](#áreas-abertas-de-pesquisa)
+    * [Verificação Não-Determinística](#verificação-não-determinística)
+    * [Protocolos para Pools Públicas de Transcodificadores](#protocolos-para-pools-públicas-de-transcodificadores)
+    * [Mitigando Gastos Duplos de _Broadcasters_](#mitigando-gastos-duplos-de-broadcasters)
+    * [Pagamentos VOD](#pagamentos-vod)
+* [Caminho de Migração](#caminho-de-migração)
 * [Apêndice](#apêndice)
-    * [Appendix A: Probabilistic Micropayments Workflow](#appendix-a-probabilistic-micropayments-workflow)
+    * [Apêndice A: Esquema de Micropagamentos Probabilísticos](#apêndice-a-esquema-de-micropagamentos-probabilísticos)
 * [Referências](#referências)
 
 ## Introdução e Background ###########################################
@@ -232,7 +232,7 @@ Por outro lado, as taxas ganhas estão menos sob controle do dono de tokens. Iss
 
 Quando completa uma rodada, o delegador poderá calcular o potencial de renda dos LPT que tem aplicados (em _stake_). Deriva dessa razão:
 
-`ETH em taxas / unidades de LPT aplicados (_staked_)`
+`ETH em taxas / unidades de LPT aplicados (staked)`
 
 O que será uma estatística visível na qual delegadores podem se basear para comparar Orquestradores e tomar decisões. Previsivelmente, delegações devem fluir, entre uma rodada e outra, para nós que apresentem oportunidades de se maximizar essa razão. Em suma, porque se ater a um nó que redistribui 1gwei por LPT aplicado (_staked_), quando há outros nós dispostos a redistribuir 2gwei por LPT aplicado?
 
@@ -241,129 +241,123 @@ O que será uma estatística visível na qual delegadores podem se basear para c
 Vale notar que o ato de se realocar _stake_ para outro nó com melhor custo de oportunidade vai significar que as _fees_ serão divididas entre uma quantia maior de _stake_, o que fará a razão (acima) decair. O estado de equilíbrio é aquele em que nós que estão performando mais trabalho (recebendo mais) tem mais _stake_, e nós performando menos com a mesma `feeShare` tem menos _stake_. Essencialmente todos os nós competitivos devem convergir para a mesma razão, com delegadores inteligentes alocando _stake_ de modo a obter um retorno também em estado de equilíbrio. No fim, a delegação inteligente de LPT inteligentemente gera acesso a trabalho que dá direito ao ganho de taxas, independentemente de como jobs são designados ou roteados na rede.
 
 ### Delegação como um Sinal de Segurança e Reputação
-Um
+Uma consequência negativa que se pode antecipar a partir das mudanças propostas é a de que nós que estão recebendo bastante trabalho podem prover 0% `feeShare`, não atrair delegação alguma, e mesmo assim continuar recolhendo boa parte do valor circulado na rede. Isto é OK - estes estariam operando hardware e incorrendo custos, além de provendo um serviço valoroso -, talvez nem precisem de delegadores.
 
-🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 
-🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯
+Por outro lado, delegação provém segurança adicional - é mais _stake_ suscetível a punições no caso de comportamento desonesto por parte do nó, mais sinal reputacional. Clients usam esse sinal para selecionar nós com os quais se relacionar, então um nó competitivo, anunciando um `feeShare` > 0% deve atrair mais _stake_ delegado, e portanto trabalho - desde que consiga realizá-lo tão ou mais competitivamente que nós que estejam oferecendo 0% `feeShare`. De novo, isso contribui para a flexibilidade de stups e casos de uso da rede. Aumenta a oportunidade para competição, descentralização, diversidade e resiliência.
 
-One negative outcome people could foresee is that nodes who are winning a lot of work could provide 0% fee share, and hence not attract any delegation. This is ok - they are running hardware and incurring costs, and providing great service to the network - they may not need delegation. But delegation on the other hand provides additional security - it is more stake that can be slashed if the node cheats - more reputational signal. Clients use this signal to select nodes to work with, and so a competitive node advertising a > 0% fee share would be more likely to attract stake, and hence work - as long as they can perform it competitively or better or cheaper than the 0% fee share node. Again, this contributes to the flexible setups and use cases of the network. It increases the opportunity for competition, decentralization, diversity, and resilience of the network.
+Conforme novos nós procurem competir por trabalho na rede, deverão atrair _stake_ suficiente para oferecer a segurança requerida por _Broadcasters_. No caso de novos entrantes, é provável que nós estreiem oferecendo `feeShares` mais generosos. Delegadores ativos poderão buscar e aplicar em nós que estejam sendo designados boa porção dos trabalhos correntes, oferecendo  uma `feeShare` atrativa, o que resulta em uma razão maior de retorno por unidade de capital aplicado. Em suma, _stake_ delegado pode prover segurança e rotear trabalho, em troca de taxas redistribuídas quando o trabalho é performado com sucesso. A delegação ativa pode levar nós oportunistas a expandirem o alcance e as capacidades da rede através de pura competição.
 
-As new nodes are looking to compete to do work on the network, they may need to attract enough stake to offer the security required by Broadcasters. In these cases, it is likely that these nodes would set a greater fee share. Active delegators will have the opportunity to search for and stake towards nodes that are winning outsized portions of works, with greater fee shares, resulting in higher fee ratios. In short, delegated stake can provide security and route work, in exchange for fees shared back when the work is performed well. Active delegation can lead to giving more opportunistic nodes the ability to expand the footprint and capabilities of the network in a competitive way.
+### Inflação que Vira _stake_ Aplicado e Delegadores Apáticos
+Um dos criticismos ao modelo de _stake_ ilimitado sem barreira mínima é o de que ele dá espaço para comportamento preguiçoso por parte de delegadores. LPT inflacionários continuam a se acumular sobre _stake_ já aplicado, compondo exponencialmente, e facilitando ao delegador o hábito de configurar sua delegação e esquecer da rede, não necessariamente provendo valor subsequente a ela.
 
+Este talvez seja o caso nos primórdios da rede, antes que _fees_ sirvam como incentivo adicional para que delegadores tomem ação, mas o comportamento não deve gerar retornos ótimos quando Orquestradores estiverem competindo por taxas e as redistribuindo. Neste ponto, o comportamento automático ainda deve levar ao acúmulo de LPT, mas abriria mão do potencial de se capturar parte das taxas fluindo pela rede, o que se conquistaria caso se tomasse a ação de realocar o _stake_ para Orquestradores que estiverem oferecendo retorno mais atrativo.
 
-### Inflation into Bonded State and Apathetic Delegators
-One of the criticisms of the uncapped stake model with no minimum stakes is that it enables lazy behavior on behalf of the delegators. Inflationary LPT continues to accrue into the bonded state, continues to compound, and allows a delegator to set-it-and-forget-it while collecting LPT without adding significant value to the network. 
+Conforme a inflação decai, uma porção maior das recompensas finais de um nó qualquer devem advir de taxas. E, conforme mencionado na seção anterior sobre o token LPT, o constante QA e re-roteamento de trabalho em direção a nós mais performantes é motivado financeiramente pela oportunidade de retorno. Em suma, um delegador apático é recompensado menos que um delegador ativo.
 
-This may be the case in the very early days of the network, before fees serve as an additional incentive for delegators to take action, but is unlikely to yield a maximal result when Orchestrators are competing to do work, earn, and distribute fees. At this point, autopilot behavior may still lead to accruing LPT, but would be forgoing the potential fees that could be earned by switching to Orchestrators who are yielding a higher ETH/staked LPT ratio. 
+Adicionalmente, Orquestradores que outrora tinham de atrair _stake_ de delegadores terceiros de modo a atingir um _stake_ mínimo, caso tenham _stake_ suficiente para assegurar seu próprio nó, podem diminuir seu `feeShare`. Neste estágio, um delegador em busca de otimização seria melhor servido por um nó recém-entrante - que possa expandir o alcance da rede e ainda esteja oferecendo um `feeShare` atrativo de modo a receber _stakes_. E este QA constante no cerne da otimização a ser efetuada por cada delegador, e o tradeoff _stake_-por-_fee_ que criará competição constante e avançará a descentralização na rede.
 
-As the inflation rate is likely to decrease under scaled usage, when token holders are staking to compete to earn the fees, the portion of the reward function that is accounted for by inflationary LPT also continues to decrease, with a great portion coming from fees. And as outlined above in the LPT section, the necessity to constantly QA the network and route work towards nodes who are outcompeting other nodes is financially motivated by the opportunistic returns. In short, an apathetic delegator is rewarded less than an active delegator.
+### Considerações de Engenharia Off Chain
+Como previamente mencionado, uma das filosofias centrais a guiar Streamflow é a de mover o máximo possível de opiniões sobre parâmetros válidos e interações p2p para fora do protocolo _core_ e para dentro das implementações de cada client e suas configurações. Múltiplas implementações e configurações desses parâmetros levarão a uma rede robusta e resiliente a ataques. No entanto, uma vez que o protocolo em si é menos opinionado, bastante fica em aberto para implementações específicas. Aqui estão algumas das principais considerações a ser ponderadas de uma perspectiva de engenharia, para tornar Streamflow efetivo "num estalar de dedos":
 
-Additionally, as Orchestrators who once needed to attract outside delegation in order to achieve the minimum stake, accrue enough stake themselves to secure their own node, they may decrease their fee share. At this stage, an optimizing delegator would be best served by seeking out a new up-and-coming node - essentially one who can expand the footprint of the network - who may be offering a higher fee share in order to attract stake. It's this constant QA performed by the optimizing Delegator, and stake-for-fee tradeoff which will create constant competition and further the decentralization of the network.
+* Políticas de gestão de risco no esquema de PM - quando um Orquestrador deve ou não trabalhar com um _Broadcaster_, com base em reputação e histórico - e vice-versa.
+* Geração segura de números randômicos para o esquema de PM.
+* Resistência contra ataques DDoS, para Orquestradores.
+* Redundância e algoritmos de _failover_ para _Broadcasters_ em diferentes cenários e casos de uso.
+* Estratégias de descoberta de preço, para _Broadcasters_.
+* Protocolos para transmissões de baixa latência ou assinatura/verificação de pagamento quando o segmento final não está disponível antes que o trabalho precise ser iniciado.
 
-### Offchain Engineering Considerations
-As previously mentioned, one of the core philosophies within Streamflow is to move many of the opinions about valid parameter values and p2p interactions out of the core protocol and into client implementations and configurations. Multiple implementations and configurations of these parameters will lead to a robust network that is resillient to attacks and malicious actors. However since the protocol itself is less opinionated, a lot is left up to client implementation. Here are some of the major considerations that need to be undertaken from an engineering perspective to make Streamflow work really effectively out of the box:
+Cada um dos itens acima pode afetar a eficiência da rede na perspectiva de um _Broadcaster_ - daí as necessárias redundâncias, e custos relativos. A boa notícia é que grande parte dos itens pode ser atacado com estratégias off chain, constantemente iteradas através de diferentes implementações. Uma rede suportada por agentes configurando-se independentemente é mais imprevisível e difícil de se otimizar um ataque contra do que uma rede de implementação uniforme.
 
-* PM risk management policies - when an Orchestrator should work with or not work with a Broadcaster based upon reputation and history, and vice versa.
-* Secure random number generation for PM protocol.
-* DDoS resistance for Orchestrators.
-* Redundancy and failover algorithms for Broadcasters under different scenarios and use cases.
-* Price discovery strategy for Broadcasters.
-* Low latency streaming protocols and signature/payment verification when final segment isn't available before work needs to begin.
+## Ataques ###############################
+Alguns dos subprotocolos, como o esquema de PM e a verificação via Truebit, são sujeitos a seus próprios ataques, o que deixaremos para análise nas respectivas linhas de pesquisa, fora desse paper. Abaixo, segue uma breve descrição de alguns potenciais ataques e contramedidas dentro da economia de Streamflow.
 
-Each of the above can effect the efficiency of the network from the perspective of a Broadcaster - and hence the necessary redundancies, and eventually costs. The good news is that much of the above can be handled via off chain strategies, and can be constantly experimented with across different competing implementations or configurations. A network that has agents acting in different and unpredictable ways is harder to optimize for an attacker who would otherwise be looking to game a single implementation. 
+### _Squeezing_ de Delegadores
+Quando um candidato a Orquestrador quiser operar um nó e expressar candidatura, ele deve atrair delegações de modo a atingir o mínimo _stake_ especificado por diferentes clients, e receber trabalho. Para fazê-lo, deve apresentar um `RewardCut` e um `FeeShare` atrativos. No entanto, conforme o nó começa a trabalhar, e a receber LPT inflacionários, pode usar esse LPT para aplicar mais _stake_ ao seu próprio nó, indefinidamente, reduzindo a quantidade de inflação e taxas que devem ser redistribuídas para os delegadores. Assim, podem acabar "espantando" delegadores ao levarem suas `RewardCut` e `FeeShare` a níveis menos atrativos, para então preencher o vazio com seu próprio _stake_ e continuar operando.
 
+Isso é teoricamente OK, uma vez que delegadores podem realocar seu _stake_ para nós mais atrativos como bem entenderem. Infelizmente, cria um problema de UX, já que delegadores precisam estar constantemente vigilantes para garantirem que estão operando para seu melhor interesse. A cada rodada, o cenário pode mudar.
 
-## Attacks ###############################
-Some of the specific sub-protocols, such as PM’s and Truebit based verification are subject to their own attacks, which we leave for analysis within those areas of research. Here is some brief discussion of potential attacks and countermeasures within the economics of the Streamflow changes to the protocol.
+Uma possibilidade é a de que Orquestradores que desejam operar nós adicionais, se seguirem esse caminho, tenham a reputação manchada e percam a capacidade de atrair _stake_ para continuar competitivos. 
 
-### Delegator Squeezing
+### Roubo da Taxa do Delegador
 
-When a candidate Orchestrator would like to operate a node and express their candidacy, they may need to attract delegation in order to reach the client specified minimum deposit amount to attract mainstream work. To do so, they may represent an attractive `RewardCut` and `FeeShare`. However, as their node begins to perform work, and they start to earn inflationary LPT, they may wish to use this LPT to stake more towards their single node in order to reduce the amount of inflation and fees they need to share with their delegators. To do so, they may drive off current delegators by manipulating their `RewardCut` and `FeeShare` to an unattractive point, and then filling the gap with their own stake.
+Como mencionado no ataque acima, é possível para um Orquestrador "espantar" seus delegadores. Essa pode ser uma técnica particularmente maliciosa se o Orquestrador também se agarrar a tíquetes de PM vencedores até o ponto em que o delegadore o abandonam, então os liquida quando contém todo o _stake_ reservado para si. Essencialmente as _fees_ e recompensas que são do delegador, de direito, ficariam de posse do Orquestrador.
 
-This is theoretically ok, as delegators can move on to more attractive nodes and adjust in their best interest. Unfortunately, it creates an annoying UX, in that the delegators need to be constantly vigilant and active to operate in their best interest. Each round, shares may shift from under them.
-
-One belief is that Orchestrators who would like to run additional nodes, maintain a positive reputation to attract significant delegation, and compete for fees, will have their reputation harmed by this approach and will not attract future delegation.
-
-### Delegator Fee Theft
-
-As mentioned in the Delegator Squeezing Attack above, it is possible for the Orchestrator to drive off its delegates. This could become a particularly malicious technique if the Orchestrator also holds onto its winning PM tickets until the point when the delegators leave, and then cashes them when it contains all the stake for its node. Essentially the fees and rewards that the delegates are entitled to would be delivered to the Orchestrator instead.
-
-This can be counteracted by having expiration dates on the PM tickets, which occur prior to the withdrawal date on the Broadcasters time-locked deposits. As such, the tickets would need to be cashed in short order, and would potentially contain the committed fee share of the Orchestrator at the time, such that when cashing a winning ticket the appropriate splits could be made amongst delegators and the Orchestrator.
+Isso pode ser prevenido com a inserção de datas de expiração nos tíquetes de PM, que ocorrem antes da data para retirada do depósito _time-locked_ do Broadcaster. Sendo assim, o tíquete precisaria ser liquidado quase imediatamente, e potencialmente conteria a _feeShare_ comprometida pelo Orquestrador no momento, de modo que a liquidação de um tíquete vencedor possa fazer a divisão correta entre delegadores e o Orquestrador para o qual delegam.
 
 
-## Open Research Areas ############################
+## Áreas Abertas de Pesquisa ############################
 
-As with all work in the early field of blockchain based crypto economic protocols, there are still many research problems which need to be persued before the systems can achieve full decentralization, trustlessness, and economic efficiency. Here are a couple areas that the project is actively conducting research in. Community participation is welcome in pressing forward on these areas as well.
+Assim como no caso de quaisquer outros protocolos manifestados em blockchains, há diversas frentes de pesquisa que devem ser exploradas antes que o sistema amadureça e atinja alto grau de descentralização, independência de confiança, e eficiência econômica. Abaixo, estão algumas áreas nas quais o projeto está ativamente conduzindo atividade de P&D. A participação da comunidade é encorajada.
 
-### Non Deterministic Verification
+### Verificação Não-Determinística
 
-Work continues on the research to verify the likelihood that a GPU encoded segment represents the same content as the pre-encoded segment. This probabilistic and metrics driven approach has been shown in experiments and early research to yield accurate scores, however the suitability for actually slashing deposits based upon probabilistic outcomes is certainly debatable and requires further research.
+Nossos esforços de P&D seguem na direção de verificar a probabilidade de que um segmento encodado por GPU represente o mesmo conteúdo que o segmento pre-encodado. Esse _approach_ probabilístico tem se mostrado, em estágio incipiente de pesquisa, capaz de prover medidas acuradas, mas a adequação para determinar, de fato, punições econômicas no protocolo, é discutível e requer mais experimentação e testes.
 
-Deterministic encoding on the other hand can continue to be checked by a variety of verification schemes including Truebit, SGX based hardware verification, Oracles, or even trusted verifiers.
+Encodificação determinística, por outro lado, continua podendo ser checada por uma variedade de esquemas, incluindo Truebit, verificação baseada em hardware SGX, oráculos ou até mesmo verificadores terceiros confiados.
 
-### Public Transcoder Pool Protocols
+### Protocolos para Pools Públicas de Transcodificadores
 
-The split between orchestration responsibilities and transcoder responsibilities should help to dramatically scale the operations of nodes on Livepeer, by leveraging idle hardware to transcode video, without necessarily requiring all those machines to be Livepeer aware 24/7 operating, staked nodes. It is believed that private pools, where the Orchestrator also contains this transcoding hardware, will be the most cost effective, because the Orchestrator can trust that the result that comes out of the transcoders is correct and not malicious.
+A divisão entre as responsabildiades de Orquestradores e Transcodificadores deve escalar dramaticamente a operação de nós na rede Livepeer. Permite o uso de hardware ocioso, sem requerir que toda máquina esteja ciente do protocolo ou ligada 24/7, muito menos com _stake_ aplicado. Acreditamos que pools privadas, onde Orquestradores também operem seus próprios hardware e Transcodificadores, serão as com melhor eficiência de custo, dado que o Orquestrador pode confiar no resultado do trabalho e não incorre custo algum de verificação.
 
-Public pools, where the orchestrator doesn't trust the transcoders, but can allow anyone to opt in to race to transcode segments, could be very powerful at leveraging any idle compute, without having to have dedicated infrastructure oneself. However, since these remote transcoding nodes aren't trusted, the Orchestrator would have to check their work, or else risk being slashed. This incurs additional costs, and therefore may be unlikely to compete with private pools - unless economic protocols can be created to secure these public pools in the form of staking deposits. If it can be shown that a particular unknown transcoder was the result of a slashing condition being invoked, and they have enough of a deposit/stake to cover the cost of the slash, then public pools could be viable.
+Pools públicas, onde o Orquestrador não necessariamente confia nos Transcodificadores, podem ser poderosas em aproveitar recursos ociosos, sem depender de infraestrutura dedicada. No entanto, uma vez que nós remotos não podem ser confiados cegamente, o Orquestrador incorre custos associados à verificação de trabalho, senão corre risco de punição sobre seu _stake_. Por isso, a eficiência de custo tende a ser menor que a de pools privadas - a menos que protocolos econômicos possam garantir a segurança dessas pools públicas na forma de _stakes_. Caso se possa provar que um Transcodificador em particular foi a causa de uma punição invocada, e este tem _stake_ suficiente para ser punido individualmente, então pools públicas tem um caminho viável para a competitividade.
 
-Further research and design here is an open topic.
+O espaço de design, aqui, é uma área de P&B em aberto.
 
-### Broadcaster Doublespend Mitigation
+### Mitigando Gastos Duplos de _Broadcasters_
 
-In a probabilistic micropayments scheme, there is always a chance with some probability that a Broadcaster has issued more winning tickets than they have balance to pay (accidentally). And since Orchestrators may not notify the Broadcaster of a winning ticket immediately, it is hard to get an accurate accounting of a Broadcaster's balance. We're continuing research on the required parameters and deposit management to avoid an accidental double spend under various usage patterns in the network. See further analysis in the Probabilistic Micropayments appendix.
+Em um esquema de pagamentos probabilísticos, há sempre a chance de que um _Broadcaster_ tenha emitido mais tíquetes vencedores do que seu balanço atual permite pagar de fato (acidentalmente). Uma vez que Orquestradores talvez não notifiquem _Broadcasters_ sobre tíquetes vencedores imediatamente após descobri-los, é difícil ter uma contabilidade precisa e em tempo real do balanço de um _Broadcaster_. Nosso P&D continua explorando parâmetros e mecanismos de gestão de depósitos para evitar gastos duplos acidentais no caso de certos padrões de uso da rede. Veja uma análise mais detalhada no Apêndice.
 
-### VOD Payments
+### Pagamentos VOD
 
-One of the nice properties that Broadcasters may look for when it comes to video-on-demand transcoding is the notion that they can make the content available, request a job, and disappear - such that the Orchestrator can perform the job asynchronously, distribute it across many nodes, or schedule it when they have idle resources available.
+Uma das propriedades que _Broadcasters_ podem buscar quando se trata de transcodificação de vídeo on-demand é a possibilidade de enviar conteúdo, requerir um job, e desaparecer - de modo que o Orquestrador possa performar o trabalho de forma assíncrona, distribui-lo por diferentes nós, ou agendá-lo para quando tiver recursos ociosos.
 
-However, in the PM scheme described in Streamflow, the Broadcaster needs to be online in order to continuously send payments as the content streams. Part of the security is in the recognition that if an Orchestrator doesn't continue doing the work, it's ok, as the Broadcaster will simply stop sending future payments.
+No entanto, com o esquema de PM descrito nesse paper, o _Broadcaster_ precisa estar online para, continuamente, enviar tíquetes conforme o conteúdo é enviado. Parte da segurança depende do reconhecimento de que, se um Orquestrador não continuar um certo trabalho, não há problema, já que o _Broadcaster_ pode simplesmente parar de enviar pagamentos.
 
-For VOD jobs though, if a Broadcaster pays up front for all segments of video and then disappears offline, there is no security to guarantee that the Orchestrator will perform the transcoding or make the transcoded segments available back to the Broadcaster. For now, VOD transcoding is possible, but upload-and-disappear is not. Research will continue on better mechanisms to enable VOD payments.
+No caso de jobs VOD, contudo, se um _Broadcaster_ pagar (enviar tíquetes) antecipadamente para todos os segmentos de um vídeo e então desaparecer (ficar offline), não há garantia de que o Orquestrador vai performar o job ou responder os segmentos transcodificados. Por ora, transcodificação de vídeos on demand é possível, mas a funcionalidade de se "subir conteúdo e desaparecer" não é. Nosso P&D continuará na direção de permitir pagamentos por serviços VOD em escala.
 
-## Migration Path ############################
+## Caminho de migração ############################
 
-The Streamflow proposal is early on in its research, design, feedback, and implementation cycle. It certainly deserves a thorough community critique, testing, audits, and acceptance prior to going live on the Ethereum main net as the next iteration on top of Livepeer's alpha protocol. This section aims to list out a couple early considerations with regards to how a protocol migration could occur:
+A proposta Streamflow está em fase incial no ciclo de pesquisa, design, _feedback_ e implementação. Merece certamente crítica da comunidade, testes, auditorias, e aceitação, antes de entrar em produção na main net da Ethereum como a próxima iteração do protocolo da Livepeer. Essa seção objetiva listar algumas considerações com relação ao modo pelo qual uma migração do protocolo pode ocorrer:
 
-* New smart contract logic would be deployed to Ethereum, however it is anticipated that very little to no data migration would be necessary. Livepeer's existing proxy-delegatecall update mechanism could be utilized.
-* Existing state in the Livepeer protocol including staking balances, fees, rewards, delegation, etc would be maintained.
-* Transcoders, Broadcasters, Orchestrators, and Delegators would update their client software, which would contain logic for job negotiation, redundancy, payments, and updated verification.
-* Orchestrators would register any new required parameters to the service registry, including supported services and possibly locations.
-* Broadcasters would establish PM contracts and deposits. Existing deposits could migrate from the Minter to the PM contract via user driven action whenever requested.
-* It is anticipated this could be accomplished with little-to-no downtime to the protocol.
-* 3rd party clients such as protocol explorers and analytics tools would likely need updates in order to reflect the new protocol interactions.
+* Novas lógicas de contratos inteligentes seriam implementadas na Ethereum, mas se antecipa que muito pouco ou nenhuma migração de dados se faria necessária. O mecanismo de update (já existente) proxy-delegateCall pode ser utilizado.
+* O estado atual no protocolo, incluindo balanços, _stakes_, taxas, recompensas e delegações, seria mantido.
+* Transcodificadores, _Broadcasters_, Orquestradores e delegadores fariam update no client que estão rodando, o que lhe conferiria funcionalidades para negociação de jobs, configurações de redundância, pagamentos e o novo mecanismo de verificação.
+* Orquestradores registrariam quaisquer novos parâmetros no Registro de Serviços, incluindo o suporte a novas demandas e, possivelmente, localizações. 
+* _Broadcasters_ estabeleceriam contratos de PM e gerenciariam depósitos. Depósitos existentes poderiam migrar do `Minter` para o contrato de PM via ação do próprio usuário, mediante uma requisição. 
+* Antecipa-se que isso pode ser realizado com pouco ou nenhum _downtime_ na rede.
+* Clients mantidos independentemente, assim como exploradores do protocolo e ferramentas de _analytics_ terão de fazer updates para refletir as novas interações abrangidas pelo protocolo.
 
-A formal migration path, checklist, and multiple observed testnet runs will be made available over time as the candidate Streamflow release date nears.
+Um caminho de migração formal, listagem de passos, e observações derivadas de experimentação em test net serão disponibilizados com o tempo, conforme Streamflow amadurecer e sua data de lançamento se aproximar.
 
-## Summary #################################
+## Sumário #################################
 
-In conclusion, the proposals contained within this document aim to shine a light on a scalable path for Livepeer's video infrastructure network - one that decouples the cost of using the Ethereum blockchain from the cost of using the network itself, and that provides existing scaled video developers with the reliability and performance that they require from their infrastructure.
+À guisa de conclusão, as propostas contidas nesse documento miram jogar luz sobre um caminho escalável para a evolução da rede Livepeer. Um caminho que descase o custo de se usar a blockchain da Ethereum do custo de se usar a infraestrutura de vídeo descentralizada, e que ofereça a desenvolvedores de vídeo a confiabilidade e performance de que necessitam.
 
-All feedback, ideas, and input are welcomed, so please do not hesitate to drop into [The Livepeer Forum](https://forum.livepeer.org) or [Discord Chat](https://discord.gg/RR4kFAh) to participate.
+Todo _feedback_, ideias e inputs são bem-vindos, então não hesite em deixar uma mensagem no [Fórum da Livepeer](https://forum.livepeer.org) ou no [Chat no Discord](https://discord.gg/RR4kFAh) para participar da conversa.
 
 
 ## Apêndice ################################
 
-### Appendix A: Probabilistic Micropayments Workflow
+### Apêndice A: Esquema de Micropagamentos Probabilísticos
 
-* An orchestrators security deposit is their stake. This can get slashed if they cheat and fail a verification.
-* A broadcaster (using this term for general user, which may be more of a developer than broadcaster) places a time-locked deposit to cover the future work that they’ll pay for on the network.
-* A broadcaster wants video transcoded. They look at the on chain registry of orchestrators advertising their services, and negotiate off chain with the ones that fit their needs:
-    * Orchestrators provide them a price quote.
-    * Orchestrators provide probabilistic micropayment (PM) parameters - these can vary depending on Ethereum network conditions. For example they can set the winning ticket amount such that the cost of cashing in is less than 1% of the value received.
-* Broadcaster sends segments of video to the orchestrator(s) they want to work with along with PM ticket.
-    * PM ticket is an interactive protocol in order to prevent either party from biasing the source of randomness used to determine whether a ticket wins or not - after every winning ticket, the orchestrator needs to generate a new random # and send the commitment to the broadcaster. This is probably ok since the broadcaster and orchestrator will already be sending data back and forth already - this would just entail an additional message sent by the orchestrator every time a new commitment is required. A later optimization that might be possible is the use of a verifiable random function (VRF) implemented in a smart contract - the orchestrator would give the broadcaster a pub key and the orchestrator signs received tickets with the corresponding priv key - the VRF contract would verify that the sig is correct which is then used as the source of pseudorandomness. As a result, the protocol becomes non-interactive. Would need to evaluate feasibility of implementing the VRF in a smart contract and the cost of verifying that type of sig - ok not to focus on this right now, but a possibility for the future.
-* Broadcaster receives transcoded output back from orchestrator.
-    * Broadcaster can verify any segments it wants to check.
-    * If the work doesn’t verify, they can provide this proof to Truebit on chain to slash the orchestrator, and earn massive reward.
-* If broadcaster doesn’t receive work back from orchestrator, simply stop sending them future segments and work with different orchestrator.
-* If the orchestrator doesn’t receive a valid PM ticket, just don’t do the work and don’t send any output back.
-    * The protocol will contain messages for certain error conditions, such as `LowPMBalance` or `SegmentFormatDidntMatchJobInputParams` so that the broadcasters can receive some useful information to debug, or so that their node can make decisions like refilling their balance.
-* Orchestrator monitors broadcaster’s deposit and assesses risk of default.
-    * Simple algorithm to begin with. If their balance is too low, just stop doing work.
-    * Orchestrator cashes winning tickets as they’re received (or waits until gas is cheaper, assessing risk of default).
+* O depósito de segurança de um Orquestrador é o seu _stake_. Este pode ser tomado, na eventualidade de uma punição, se o Orquestrador for desonesto e falhar uma verificação (cometer uma "falta").
+* Um _Broadcaster_ (usamos esse termo para o usuário comum, que pode ser mais um desenvolvedor que um Youtuber propriamente dito) efetua um depósito _time-locked_ para cobrir o trabalho futuro a ser demandado da rede pelo qual ele terá de pagar.
+* O _Broadcaster_ quer seu vídeo transcodificado. Ele lê o Registro de Serviços on chain, e negocia off chain com Orquestradores que satisfazem seus requerimentos:
+   * Orquestradores anunciam seus preços.
+   * Orquestradores provém parâmetros de PM - estes podem variar de acordo com as condições atuais da Ethereum. Por exempplo, podem configurar o valor de face do tíquete vencedor de modo que o custo de se liquidar um pagamento seja menor que 1% do valor a ser recebido.
+* O _Broadcaster_ envia segmentos de vídeo para o(s) Orquestrador(es) com quem decidiu trabalhar, junto a um tíquete de PM para cada segmento.
+   * O tíquete de PM engloba um protocolo interativo desenhado para prevenir que cada um dos dois agentes interfira na fonte de randomicidade usada para determinar se um tíquete é vencedor ou não. Depois de todo tíquete vencedor, o Orquestrador precisa gerar um novo número randômico e mandar um "compromisso" assinado atrelado a ele para o _Broadcaster_. O _Broadcaster_ e o Orquestrador já deverão estar trocando dados entre si - isto só somaria uma mensagem adicional ao fluxo, a ser enviada pelo Orquestrador cada vez que um "compromisso" novo é preciso. Outra otimização possível é usar uma função de randomicidade verificável (VRF) implementada num contrato autônomo. O Orquestrador entregaria ao _Broadcaster_ uma _pub key_, e assinaria tíquetes recebidos com a chave privada correspondente. O contrato VRF verificaria a validade da assinatura, usando-a então como fonte para a pseudo-randomicidade. Como resultado, o protocolo se torna não-interativo. Seria preciso avaliar a viabilidade de se implementar um contrato para VRFs, assim como o custo de se verificar o tipo de assinatura supracitado - não é o foco, por ora, mas não deixa de ser uma possibilidade.
+* O _Broadcaster_ recebe o resultado transcodificado do Orquestrador.
+   * O _Broadcaster_ pode verificar qualquer segmento que quiser checar.
+   * Se a checagem não for bem sucedida, pode-se ativar a resolução de disputa via Truebit e punir o Orquestrador, rendendo uma recompensa (derivada do _stake_ punido) para o _Broadcaster_.
+* Se o _Broadcaster_ não receber o trabalho de volta do Orquestrador, ele simplesmente para de lhe enviar mais segmentos, e troca para outro Orquestrador.
+* Se o Orquestrador não receber tíquetes de PM válidos, ele simplesmente não performa o trabalho e não responde nenhum resultado.
+   * O protocolo conterá mensagens para certas condições de erro, tais como `LowPMBalance` ou `SegmentFormatDidntMatchJobInputParams`, de modo que _Broadcasters_ tenham informação útil com a qual contornar empecilhos, ou para suportar decisões como reabastecer um balanço.
+* Orquestradores monitoram depósitos de _Broadcasters_ e atribuem um risco de inadimplência a cada perfil.
+   * Algoritmo simples para começar: se o balanço é baixo demais, parar de performar trabalho para o cliente em questão.
+   * Orquestradores liquidam tíquetes vencedores conforme os recebem (ou aguardam até que o gas seja mais barato).
     
-For a full analysis and specification of the ticket data structures, double spend prevention, and other design considerations, see this [external document](https://hackmd.io/uHMFeNSyS_GyzwnO3Ld74A?view).
+Para uma análise e especificação completa das estruturas de dados dos tíquetes, prevenção a gastos duplos, e outras considerações de design, veja esse [documento externo](https://hackmd.io/uHMFeNSyS_GyzwnO3Ld74A?view).
 
 ## Referências ###########################################
 
@@ -372,5 +366,3 @@ For a full analysis and specification of the ticket data structures, double spen
 3. Ethereum Probabilistic Micropayments - Gustav Simonson - <https://medium.com/@gustav.simonsson/ethereum-probabilistic-micropayments-ae6e6cd85a06>
 4. Electronic Lottery Tickets as Micropayments - Ron Rivest - MIT Lab for Computer Science - <https://people.csail.mit.edu/rivest/pubs/Riv97b.pdf>
 5. Decentralized Anonymous Micropayments - A. Chiesa, M. Green, J. Liu, P. Miao, I. Miers and P. Mishra - <https://eprint.iacr.org/2016/1033.pdf>
-
-
